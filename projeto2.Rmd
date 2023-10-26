@@ -1,14 +1,15 @@
 ---
-title: "Projeto 2"
-author: 
-  - "Nathalia Gabriella Ferreira dos Santos"
-  - "Bárbara"
-date: "`r Sys.Date()`"
+#title: "Projeto I"
+#author:
+#- Bárbara Oliveira Ribeiro
+#- Nathalia Gabriella Ferreira dos Santos
+#date: "`r Sys.Date()`"
 output:
-  html_document:
-    number_sections: yes
-    fig_caption: yes
-  pdf_document: default
+  bookdown::html_document2:
+    new_session: true
+    number_sections: false
+    fig_caption: true
+#header-includes: \usepackage[brazil]{babel}
 editor_options:
   chunk_output_type: console
 ---
@@ -26,15 +27,461 @@ knitr::opts_chunk$set(
 library(tidyverse)
 library(readxl)
 library(patchwork) # para parcionar os graficos
-library(kableExtra)
 library(janitor)
-
+library(kableExtra)
 # rode uma vez soh
-devtools::install_github(repo="haozhu233/kableExtra", ref="a6af5c0")
 ```
 
 ```{r limpa_env}
 rm(list = ls())
+
+df1 <- read_xlsx("dados.xlsx", sheet = "Dados Atuais")
+df2 <- read_xlsx("dados.xlsx", sheet = "Dados Gestacionais")
+df3 <- read_xlsx("dados.xlsx", sheet = "ELISAs")
+df4 <- read_xlsx("dados.xlsx", sheet = "Imunoturbidimetria")
+df5 <- read_xlsx("dados.xlsx", sheet = "Doenças Crônicas")
+df6 <- read_xlsx("dados.xlsx", sheet = "Aspectos Psicológicos")
+```
+
+```{r funcoes_trata_dados}
+##Funções para tratar os dados:
+
+coluna_na_numerica <- function(lista, caracter = ".", substituto = ""){
+  lista %>% 
+    str_replace(. , pattern = ",", replacement = ".") %>%
+    str_replace_na(. , replacement = "") %>% 
+    ifelse(. == caracter, substituto, .) %>% as.numeric()
+}
+
+coluna_numerica <- function(lista){
+  lista %>% 
+    ifelse(. == 99999, NA, .) %>% as.numeric()
+}
+```
+
+```{r tratamento_df1}
+#### DF1: Dados Atuais
+
+colunas_interesse <- c(
+  "NOME    (iniciais)",
+  "GRUPO      MN:0      MP:1",
+  "ETNIA                1:branca   2:parda   3:negra",
+  "IDADE    anos",
+  "ESCOLARIDADE COMPLETA  0: 4ª série completa   1:fundamental completo 2:médio completo 3:ensino técnico completo 4:superior completo 5:pós-graduação completa",
+  "DOENÇA CRÔNICA  0:não   1:hipertensão   2:diabetes   3:hipercolesterolemia   4:fibromialgia   5:glaucoma   6:enxaqueca   7:hipotireoidismo   8:asma   9:esteatose hepática   10:síndrome do intestino irritável   11:hemangioma   12:trombofilia   13:bronquite   14:rinite   15:ovário policístico   16:TAG   17:sinusite   18:depressão   19: artrose   20:leucocitose   21:anemia   22:síndrome do pânico   23:gastrite   24:hepatite   25:crise alérgica   26:cistite  27:anemia falciforme   28:mioma uterino   29:cálculo renal   30:calcificação mamária   31:hipoglicemia   32:derrame de vista   33:hidradenite  34:glomeruloesclerose 35:pré-diabetes 36:bipolaridade 37:TDAH 38:TEA 39:Doença de Still",
+  "NÚMERO GESTAÇÕES",
+  "Grupo sanguíneo ABO         0:A         1:B         2:O          3: AB",
+  "RH   0:negativo   1:positivo",
+  "Peso (kg)",
+  "Altura (m)",
+  "IMC",
+  "GORDURA (%)",
+  "PRESSÃO SISTÓLICA (mmHg)",
+  "PRESSÃO DIASTÓLICA (mmHg)",
+  "PRESSÃO ARTERIAL MÉDIA",
+  "CINTURA (cm)",
+  "ABDÔMEN (cm)",
+  "QUADRIL (cm)",
+  "RELAÇÃO CINTURA/QUADRIL",
+  "RBC (106/µL)",
+  "HGB (g/dL)",
+  "HCT (%)",
+  "VCM (µm³)",
+  "HCM (pg)",
+  "CHCM (g/dL)",
+  "RDW-CV (%)",
+  "RDW-SD (µm³)",
+  "PLT (10³/µL)",
+  "PCT (%)",
+  "VPM (µm³)",
+  "PDW (µm³)",
+  "P-LCC (10³/µL)",
+  "P-LCR (%)",
+  "WBC (10³/µL)",
+  "NEU (10³/µL)",
+  "LYM (10³/µL)",
+  "MON (10³/µL)",
+  "EOS (10³/µL)",
+  "BASO (10³/µL)",
+  "LIC (10³/µL)",
+  "NLR",
+  "Colesterol total (mg/dL)",
+  "HDL (mg/dL)",
+  "LDL (mg/dL) DOSADO",
+  "VLDL (mg/dL)",
+  "Não-HDL (mg/dL)",
+  "Triglicérides (mg/dL)",
+  "HbA1c (%)",
+  "Creatinina (mg/dL)",
+  "Ritmo de filtrção glomerular calculado",
+  "TGP/ALT",
+  "TGO/AST",
+  "Ácido Úrico",
+  "CK",
+  "Gama GT",
+  "USA ANTI-HIPERTENSIVO 0:não 1:sim",
+  "USA MEDICAMENTO PARA DIABETES 0:não 1:sim",
+  "USA MEDICAMENTO PARA HIPERCOLESTEROLEMIA 0:não 1:sim",
+  "TABAGISTA 0: não   1:sim", 
+  "ETILISTA    0: não   1:sim"
+  )
+
+renomear_colunas <- c(
+  "iniciais",
+  "grupo",
+  "etnia",
+  "idade",
+  "escolaridade",
+  "doenca",
+  "num_gestacoes",
+  "gpsanguineo",
+  "rh",
+  "peso",
+  "altura",
+  "imc",
+  "gordura",  
+  "pressao_sis",
+  "pressao_dias",
+  "pressao_media", 
+  "cintura",
+  "abdomen",
+  "quadril",
+  "cintura_quadril",
+  "rbc",
+  "hgb",
+  "hct",
+  "vcm",
+  "hcm",
+  "chcm",
+  "rdwcv",
+  "rdwsd",
+  "plt",
+  "pct",
+  "vpm",
+  "pdw",
+  "plcc",
+  "plcr",
+  "wbc",
+  "neu",
+  "lym",
+  "mon", 
+  "eos",
+  "baso",
+  "lic",
+  "nlr",
+  "colesterol_total",
+  "hdl",
+  "ldl_dosado",
+  "vldl",
+  "nao_hdl",
+  "triglicerides",
+  "hba1c",
+  "creatinina",
+  "filtr_glomerular",
+  "tgp_alt",
+  "tgo_ast",
+  "acido_urico",
+  "ck",
+  "gama_gt",
+  "anti_hiper",
+  "medic_diabetes",
+  "medic_hipercol",
+  "tabagista",
+  "elitista"
+  )
+
+df1 <- df1 %>% dplyr::select(all_of(colunas_interesse))
+colnames(df1) <- renomear_colunas
+
+grupos_nulos <- df1 %>% dplyr::select(grupo) %>% is.na()
+df1 <- df1 %>% 
+  filter(!grupos_nulos) %>% 
+  mutate(
+    grupo = as.factor(grupo),
+    etnia = coluna_numerica(etnia),
+    escolaridade = as.factor(escolaridade),
+    doenca = gsub("\\.", ",", doenca),
+    gpsanguineo = coluna_numerica(gpsanguineo),
+    rh = coluna_numerica(rh),
+    peso = coluna_numerica(peso),
+    imc = coluna_na_numerica(imc, "#DIV/0!", NA) %>% coluna_numerica() %>% round(2),
+    gordura = coluna_na_numerica(gordura) %>% coluna_numerica(),
+    pressao_sis = coluna_numerica(pressao_sis),
+    pressao_dias = coluna_numerica(pressao_dias),
+    pressao_media = coluna_numerica(pressao_media) %>% round(2),
+    cintura = coluna_numerica(cintura),
+    abdomen = coluna_numerica(abdomen),
+    quadril = coluna_numerica(quadril),
+    cintura_quadril = coluna_na_numerica(cintura_quadril, "#DIV/0!", NA) %>% coluna_numerica() %>% round(2),
+    mon = coluna_numerica(mon),
+    nlr = coluna_na_numerica(nlr, "#DIV/0!", NA) %>% coluna_numerica(),
+    ldl_dosado = coluna_na_numerica(ldl_dosado, "#DIV/0!", NA) %>% coluna_numerica(),
+    vldl = coluna_na_numerica(vldl, "#DIV/0!", NA) %>% coluna_numerica() %>% round(2),
+    nao_hdl = coluna_numerica(nao_hdl) %>% round(2),
+    hba1c = coluna_numerica(hba1c) %>% round(2),
+    creatinina = coluna_numerica(creatinina),
+    filtr_glomerular = coluna_na_numerica(filtr_glomerular, "#DIV/0!", NA) %>% coluna_numerica(),
+    ck = coluna_numerica(ck)
+    )
+
+df1 <- df1 %>%
+  mutate_at(vars(-c(iniciais, grupo, escolaridade, doenca, etnia, num_gestacoes)), as.numeric)
+```
+
+```{r tratamento_df2}
+####  DF2: Dados Gestacionais
+
+colunas_interesse <- c(
+  "NOME    (iniciais)",
+  "GRUPO      MN:0      MP:1",
+  "Ano",
+  "Há quantos anos",
+  "PARTO                                     0:normal   1:cesariana   2:fórceps",
+  "PESO BEBÊ (kg)",
+  "SEXO BEBÊ 0:feminino   1:masculino",
+  "MESMO PAI 0:não        1:sim      2:não se aplica (primigesta)",
+  "INTERVALO ENTRE PARTOS (meses) 0:primigesta",
+  "PARTO PREMATURO 0:não      1:sim",
+  "GESTAÇÃO MÚLTIPLA  (gêmeos) 0:não   1:sim"
+  )
+
+renomear_colunas <- c(
+  "iniciais",
+  "grupo",
+  "ano",
+  "quantos_anos_evento",
+  "tipo_parto",
+  "peso_bebe",
+  "sexo_bebe",
+  "mesmo_pai",
+  "intervalo_partos",
+  "prematuro",
+  "gemeos"
+  )
+
+df2 <- df2 %>% dplyr::select(all_of(colunas_interesse))
+colnames(df2) <- renomear_colunas
+
+grupos_nulos <- df2 %>% dplyr::select(grupo) %>% is.na()
+df2 <- df2 %>% 
+  filter(! grupos_nulos) %>% 
+  mutate(
+    grupo = as.factor(grupo),
+    quantos_anos_evento = quantos_anos_evento %>% as.numeric(),
+    peso_bebe = coluna_numerica(peso_bebe),
+    tipo_parto = as.factor(coluna_numerica(tipo_parto)),
+    prematuro = as.factor(prematuro)
+    )
+```
+
+```{r tratamento_df3}
+#### DF3: ELISAs
+
+colunas_interesse <- c(
+  "NOME    (iniciais)",
+ "GRUPO      MN:0      MP:1", 
+ "PAI-1 (ng/mL)",
+ "Log PAI-1 (ng/mL)",
+ "TROMBOMODULINA (ng/mL)",
+ "ADMA (ng/mL)",
+ "sFlt1 (pg/mL)",
+ "Absorbâncias sFlt1",
+ "AA-AT1 (ng/mL)"
+)
+
+renomear_colunas <- c(
+  "iniciais",
+ "grupo", 
+ "pai1",
+ "logpai1",
+ "trombomodulina",
+ "adma",
+ "sflt1",
+ "absor_sflt1",
+ "aaat1"
+)
+df3 <- df3 %>% dplyr::select(all_of(colunas_interesse))
+
+colnames(df3) <- renomear_colunas
+
+df3 <- df3 %>% drop_na(grupo) %>% 
+  mutate(
+  pai1 = coluna_numerica(pai1) %>% round(2),
+  logpai1 = coluna_numerica(logpai1) %>% round(2),
+  trombomodulina = coluna_numerica(trombomodulina),
+  adma = coluna_numerica(adma), 
+  sflt1 = coluna_na_numerica(sflt1, "< curva", NA) %>% coluna_numerica() %>% round(2),
+  absor_sflt1 = coluna_numerica(absor_sflt1) %>% round(2),
+  aaat1 = coluna_numerica(aaat1) %>% round(2)
+)
+
+df3 <- df3 %>%
+  mutate_at(vars(-iniciais), as.numeric)
+
+# corrigindo outro erro de adma
+df3$adma <- df3$adma %>% ifelse(. == 999999, NA, .) %>% as.numeric()
+```
+
+```{r tratamento_df4}
+#### DF4: Imunoturbidimetria
+
+colunas_interesse <- c(
+   "NOME    (iniciais)",
+ "GRUPO      MN:0      MP:1", 
+ "DÍMERO-D (ng/mL)",
+ "LOG DÍMERO-D"
+)
+renomear_colunas <- c(
+  "iniciais",
+ "grupo", 
+ "dimero",
+ "logdimero"
+)
+df4 <- df4 %>% dplyr::select(all_of(colunas_interesse))
+colnames(df4) <- renomear_colunas
+
+df4 <- df4 %>% 
+  mutate_at(vars(-iniciais), as.numeric)
+
+# alterando df4
+df4 <- df4 %>% mutate(
+    dimero = coluna_numerica(dimero),
+    logdimero = coluna_numerica(logdimero) %>% round(2)
+)
+```
+
+```{r tratamento_df5}
+#### DF5: Doenças Crônicas
+
+colunas_interesse <- c(
+  "NOME    (iniciais)",
+ "GRUPO      MN:0      MP:1", 
+ "HIPERTENSÃO 0:não   1:sim",
+ "DIABETES 0:não   1:sim",
+ "HIPERCOLESTEROLEMIA 0:não   1:sim",
+ "FIBROMIALGIA 0:não   1:sim",
+ "GLAUCOMA 0:não   1:sim",
+ "ENXAQUECA 0:não   1:sim",
+ "HIPOTIREOIDISMO 0:não   1:sim",
+ "ASMA 0:não   1:sim",
+ "ESTEATOSE HEPÁTICA 0:não   1:sim",
+ "SÍNDROME DO INTESTINO IRRITÁVEL 0:não   1:sim",
+ "HEMANGIOMA  0:não   1:sim",
+ "TROMBOFILIA  0:não   1:sim",
+ "BRONQUITE  0:não   1:sim",
+ "RINITE  0:não   1:sim",
+ "OVÁRIOS POLICÍSTICOS 0:não   1:sim",
+  "Transtorno de ansiedade generalizada (TAG)  0:não   1:sim",
+ "SINUSITE 0:não 1:sim",
+ "DEPRESSÃO 0:não   1:sim",
+ "ARTROSE 0:não   1:sim",
+ "LEUCOCITOSE 0:não   1:sim",
+ "ANEMIA 0:não   1:sim",
+ "SÍNDROME DO PÂNICO 0:não   1:sim",
+ "GASTRITE 0:não   1:sim",
+ "HEPATITE 0:não   1:sim",
+ "CRISE ALÉRGICA 0:não   1:sim",
+ "CISTITE 0:não   1:sim",
+ "ANEMIA FALCIFORME 0: não 1:sim",
+ "MIOMA UTERINO 0: não 1: sim",
+ "CÁLCULO RENAL 0: não 1: sim",
+ "CALCIFICAÇÃO MAMÁRIA 0: não 1: sim",
+ "HIPOGLICEMIA 0: não 1: sim",
+ "DERRAME DE VISTA 0: não 1: sim",
+ "HIDRADENITE 0: não 1: sim",
+ "GLOMERULOESCLEREOSE  0: não 1: sim",
+ "PRÉ-DIABETES 0: não 1: sim",
+  "BIPOLAR 0: não 1: sim",
+  "TDAH 0: não 1: sim",
+  "TEA 0: não 1: sim",
+  "DOENÇA DE STILL 0: não 1: sim"
+)
+
+renomear_colunas <- c(
+  "iniciais",
+ "grupo", 
+ "hipertensao",
+ "diabetes",
+ "hipercolesterolemia",
+ "fibromialgia",
+ "glaucoma",
+ "enxaqueca",
+ "hipotireoidismo",
+ "asma",
+ "esteatose_hepatica",
+ "sindrome_intestino_irritavel",
+ "hemangioma",
+ "trombofilia",
+ "bronquite",
+ "rinite",
+ "ovario_policistico",
+ "tag",
+ "sinusite",
+ "depressao",
+ "artrose",
+ "leucocitose",
+ "anemia",
+ "sindrome_panico",
+ "gastrite",
+ "hepatite",
+ "crise_alergica",
+ "cistite",
+ "anemia_falciforme",
+ "mioma_uterino",
+ "calculo_renal",
+ "calcificacao_mamaria",
+ "hipoglicemia",
+ "derrame de vista",
+ "hidradenite",
+ "glomeruloesclerose",
+ "pre_diabetes",
+ "bipolaridade",
+ "tdah",
+ "tea",
+ "still"
+)
+
+df5 <- df5 %>% dplyr::select(all_of(colunas_interesse))
+colnames(df5) <- renomear_colunas
+
+df5 <- df5 %>% 
+  mutate_at(vars(-iniciais), as.numeric)
+```
+
+```{r tratamento_df6}
+#### DF6: Aspectos Psicologicos
+
+colunas_interesse <- c(
+  "NOME    (iniciais)",
+ "GRUPO      MN:0      MP:1", 
+ "REDE DE APOIO             0:não   1:sim",                                                                          
+ "PRIMEIRO FILHO     0:não   1:sim",                                                                                 
+ "TRABALHAVA FORA       0:não       1:sim",                                                                          
+ "RELACIONAMENTO COM O PAI                                  0:não tinha     1:ruim   2:normal   3:bom   4:excelente",
+ "APOIO DO PARCEIRO            1:nenhum                 2:pouco                         3:muito"                    
+ )
+
+renomear_colunas <- c(
+  "iniciais",
+ "grupo", 
+ "apoio",
+ "1o_filho",
+ "trabalha",
+ "relac_pai",
+ "apoio_pai"
+)
+
+df6 <- df6 %>% dplyr::select(all_of(colunas_interesse))
+
+colnames(df6) <- renomear_colunas
+
+df6 <- df6 %>% drop_na(grupo) %>% 
+  mutate(
+  relac_pai = coluna_numerica(relac_pai),
+)
+
+df6 <- df6 %>%
+  mutate_at(vars(-c(iniciais)), as.numeric)
 ```
 
 ```{r tema_graficos}
