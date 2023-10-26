@@ -449,13 +449,16 @@ df5 <- df5 %>%
 ```
 
 ```{r tratamento_df6}
+names(df6)[10] <- 'FILHOS VIVOS NO PERÍODO DA GESTAÇÃO: 0:sem filhos 1: um filho 2: dois ou mais filhos'
+
 #### DF6: Aspectos Psicologicos
 
 colunas_interesse <- c(
   "NOME    (iniciais)",
  "GRUPO      MN:0      MP:1", 
  "REDE DE APOIO             0:não   1:sim",                                                                          
- "PRIMEIRO FILHO     0:não   1:sim",                                                                                 
+ "PRIMEIRO FILHO     0:não   1:sim",       
+ "FILHOS VIVOS NO PERÍODO DA GESTAÇÃO: 0:sem filhos 1: um filho 2: dois ou mais filhos",
  "TRABALHAVA FORA       0:não       1:sim",                                                                          
  "RELACIONAMENTO COM O PAI                                  0:não tinha     1:ruim   2:normal   3:bom   4:excelente",
  "APOIO DO PARCEIRO            1:nenhum                 2:pouco                         3:muito"                    
@@ -466,6 +469,7 @@ renomear_colunas <- c(
  "grupo", 
  "apoio",
  "1o_filho",
+ "filhos_vivos",
  "trabalha",
  "relac_pai",
  "apoio_pai"
@@ -477,13 +481,13 @@ colnames(df6) <- renomear_colunas
 
 df6 <- df6 %>% drop_na(grupo) %>% 
   mutate(
+    filhos_vivos = coluna_numerica(filhos_vivos),
   relac_pai = coluna_numerica(relac_pai),
 )
 
 df6 <- df6 %>%
   mutate_at(vars(-c(iniciais)), as.numeric)
 ```
-
 ```{r tema_graficos}
 cor_verde = c("#4fb6a7")
 cor_roxa = c("#652177")
