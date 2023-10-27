@@ -204,6 +204,7 @@ df1 <- df1 %>%
     gpsanguineo = coluna_numerica(gpsanguineo),
     rh = coluna_numerica(rh),
     peso = coluna_numerica(peso),
+    altura = coluna_numerica(altura),
     imc = coluna_na_numerica(imc, "#DIV/0!", NA) %>% coluna_numerica() %>% round(2),
     gordura = coluna_na_numerica(gordura) %>% coluna_numerica(),
     pressao_sis = coluna_numerica(pressao_sis),
@@ -236,13 +237,13 @@ colunas_interesse <- c(
   "GRUPO      MN:0      MP:1",
   "Ano",
   "Há quantos anos",
-  "PARTO                                     0:normal   1:cesariana   2:fórceps",
+  "PARTO                                     0:normal   1:cesariana   2:fórceps  3: induzido",
   "PESO BEBÊ (kg)",
   "SEXO BEBÊ 0:feminino   1:masculino",
   "MESMO PAI 0:não        1:sim      2:não se aplica (primigesta)",
-  "INTERVALO ENTRE PARTOS (meses) 0:primigesta",
+  "INTERVALO ENTRE PARTOS (meses)",
   "PARTO PREMATURO 0:não      1:sim",
-  "GESTAÇÃO MÚLTIPLA  (gêmeos) 0:não   1:sim"
+  "GESTAÇÃO MÚLTIPLA   0:não   1:sim"
   )
 
 renomear_colunas <- c(
@@ -484,6 +485,27 @@ df6 <- df6 %>%
   mutate_at(vars(-c(iniciais)), as.numeric)
 ```
 
+```{r resumo_df}
+df1 <- df1 %>% mutate(grupo = as.factor(grupo))
+df3 <- df3 %>% mutate(grupo = as.factor(grupo))
+
+df_completo <- left_join(df1 %>% select(-ck), 
+                         df3 %>% select(iniciais, grupo, trombomodulina, adma),
+                         by = join_by(iniciais, grupo), relationship = "many-to-many") %>% 
+  select(- iniciais)
+
+cols <- df_completo %>% names()
+cat <- c("grupo", "etnia", "escolaridade", "doenca", "num_gestacoes", "gpsanguineo", 
+         "rh", "medic_diabetes", "medic_hipercol", "tabagista", "elitista")
+num <- c("grupo", cols[! cols %in% cat])
+
+df_num <- df_completo %>% select(all_of(num))
+df_cat <- df_completo %>% select(all_of(cat))
+
+df_cat <- df_cat %>% mutate(escolaridade_bin = ifelse(escolaridade %in% c(3, 4), "superior", "basico"))
+```
+
+
 ```{r tema_graficos}
 cor_verde = c("#4fb6a7")
 cor_roxa = c("#652177")
@@ -503,6 +525,8 @@ theme_set(tema)
 ```
 
 ## Resumo testes de hipóteses
+
+### Dados numéricos
 
 Para os dados numéricos, os testes tiveram por hipótese geral:
 
@@ -532,7 +556,7 @@ realizar_teste <- function(dataframe, variavel) {
   shapiro2 <- shapiro.test(grupo_MP)
 
   ## Teste de Hipotese - & ou || aqui?
-  if (shapiro1$p.value <= alpha || shapiro2$p.value <= alpha) {
+  if (shapiro1$p.value <= alpha || shapiro2$p.value <= alpha) { # pelo menos um nao normal
     resultado_teste <- wilcox.test(grupo_MN, grupo_MP, correct = FALSE,  alternative = "two.sided")
   } else {
     resultado_teste <- t.test(grupo_MN, grupo_MP, alternative = "two.sided") 
@@ -564,15 +588,14 @@ realizar_teste <- function(dataframe, variavel) {
 ```{r aplicando_teste_numericos}
 ### Idade:
 variavel <- "idade"
-teste <- realizar_teste(df1, variavel)
+teste <- realizar_teste(df_num, variavel)
 tabela_resumo <- teste
 
-todas_variaveis <- "imc"
+todas_variaveis <- num[-c(1,2)]
 for(variavel in todas_variaveis){
-  teste <- realizar_teste(df1, variavel)
+  teste <- realizar_teste(df_num, variavel)
   tabela_resumo <- rbind(tabela_resumo, teste)
 }
-tabela_resumo
 
 kbl(
   tabela_resumo, 
@@ -584,6 +607,22 @@ kbl(
   collapse_rows(columns = c(1,13:14))
 ```
 
+#### Apenas significativos
+
+```{r}
+tabela_resumo_sig <- tabela_resumo %>% filter(Conc == "Sig") %>% select(- Conc)
+
+kbl(
+  tabela_resumo_sig, 
+  digits = 2,
+  format.args = list(decimal.mark = ',', big.mark = ".") 
+  ) %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = c(1,13))
+```
+
+### Dados categóricos
 
 ```{r}
 # Teste de hipóteses para dados categóricos
@@ -616,8 +655,17 @@ hipo_categorica <- function(dados, grupo, variavel){
 ```{r aplicando_teste_categoricos}
 ### Etnia:
 variavel <- "etnia"
-teste <- hipo_categorica(df1, "grupo", variavel)
+teste <- hipo_categorica(df_cat, "grupo", variavel)
 tabela_resumo_cat <- teste
+
+todas_variaveis <- names(df_cat)[-c(1,2)]
+
+todas_variaveis <- todas_variaveis[-2] # tirando doenca por enquanto
+
+for(variavel in todas_variaveis){
+  teste <- hipo_categorica(df_cat, "grupo", variavel)
+  tabela_resumo_cat <- rbind(tabela_resumo_cat, teste)
+}
 
 kbl(
   tabela_resumo_cat, 
@@ -629,3 +677,17 @@ kbl(
   collapse_rows(columns = c(1,7:8))
 ```
 
+#### Apenas significativos
+
+```{r}
+tabela_resumo_cat_sig <- tabela_resumo_cat %>% filter(Conc == "Sig") %>% select(- Conc)
+
+kbl(
+  tabela_resumo_cat_sig, 
+  digits = 2,
+  format.args = list(decimal.mark = ',', big.mark = ".") 
+  ) %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = c(1,7))
+```
