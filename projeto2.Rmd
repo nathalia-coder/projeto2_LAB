@@ -1,8 +1,6 @@
 ---
 #title: "Projeto I"
 #author:
-#- Bárbara Oliveira Ribeiro
-#- Nathalia Gabriella Ferreira dos Santos
 #date: "`r Sys.Date()`"
 output:
   bookdown::html_document2:
@@ -25,7 +23,7 @@ knitr::opts_chunk$set(
 
 ```{r pacotes, message=FALSE, warning=FALSE}
 library(tidyverse)
-library(readxl)
+library(readxl) 
 library(patchwork) # para parcionar os graficos
 library(janitor)
 library(kableExtra)
@@ -237,13 +235,13 @@ colunas_interesse <- c(
   "GRUPO      MN:0      MP:1",
   "Ano",
   "Há quantos anos",
-  "PARTO                                     0:normal   1:cesariana   2:fórceps  3: induzido",
+  "PARTO                                     0:normal   1:cesariana   2:fórceps",
   "PESO BEBÊ (kg)",
   "SEXO BEBÊ 0:feminino   1:masculino",
   "MESMO PAI 0:não        1:sim      2:não se aplica (primigesta)",
-  "INTERVALO ENTRE PARTOS (meses)",
+  "INTERVALO ENTRE PARTOS (meses) 0:primigesta",
   "PARTO PREMATURO 0:não      1:sim",
-  "GESTAÇÃO MÚLTIPLA   0:não   1:sim"
+  "GESTAÇÃO MÚLTIPLA  (gêmeos) 0:não   1:sim"
   )
 
 renomear_colunas <- c(
