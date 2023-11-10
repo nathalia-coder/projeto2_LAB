@@ -231,7 +231,7 @@ df1 <- df1 %>%
 
 df1 <- df1 %>%
   mutate_at(vars(-c(iniciais, grupo, escolaridade, doenca, etnia, num_gestacoes)), as.numeric)%>%
-  mutate(sangue_o = ifelse(gpsanguineo == 2, 1, 0),
+  mutate(sangueo = ifelse(gpsanguineo == 2, 1, 0),
          razaoldl = ldl_dosado/colesterol_total,
          num_gestacoes = ifelse(num_gestacoes == 1, 1, ifelse(num_gestacoes == 2, 2, 3))
          )
