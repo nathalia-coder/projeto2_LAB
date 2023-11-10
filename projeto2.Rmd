@@ -499,6 +499,18 @@ df6 <- df6 %>%
 ```
 
 ```{r resumo_df}
+posicoes_duplicadas <- which(duplicated(df1$iniciais))
+df1$iniciais[posicoes_duplicadas] <- paste0(df1$iniciais[posicoes_duplicadas], "2")
+
+posicoes_duplicadas <- which(duplicated(df2$iniciais))
+df2$iniciais[posicoes_duplicadas] <- paste0(df2$iniciais[posicoes_duplicadas], "2")
+
+posicoes_duplicadas <- which(duplicated(df3$iniciais))
+df3$iniciais[posicoes_duplicadas] <- paste0(df3$iniciais[posicoes_duplicadas], "2")
+
+posicoes_duplicadas <- which(duplicated(df5$iniciais))
+df5$iniciais[posicoes_duplicadas] <- paste0(df5$iniciais[posicoes_duplicadas], "2")
+
 df1 <- df1 %>% mutate(grupo = as.factor(grupo))
 df2 <- df2 %>% mutate(grupo = as.factor(grupo))
 df3 <- df3 %>% mutate(grupo = as.factor(grupo))
