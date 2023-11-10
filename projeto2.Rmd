@@ -123,7 +123,9 @@ colunas_interesse <- c(
   "USA MEDICAMENTO PARA DIABETES 0:não 1:sim",
   "USA MEDICAMENTO PARA HIPERCOLESTEROLEMIA 0:não 1:sim",
   "TABAGISTA 0: não   1:sim", 
-  "ETILISTA    0: não   1:sim"
+  "ETILISTA    0: não   1:sim",
+  "Glicemia capilar (mg/dL)",
+  "Glicose"
   )
 
 renomear_colunas <- c(
@@ -187,7 +189,9 @@ renomear_colunas <- c(
   "medic_diabetes",
   "medic_hipercol",
   "tabagista",
-  "elitista"
+  "elitista",
+  "glicemia",
+  "glicose"
   )
 
 df1 <- df1 %>% dplyr::select(all_of(colunas_interesse))
@@ -222,7 +226,9 @@ df1 <- df1 %>%
     hba1c = coluna_numerica(hba1c) %>% round(2),
     creatinina = coluna_numerica(creatinina),
     filtr_glomerular = coluna_na_numerica(filtr_glomerular, "#DIV/0!", NA) %>% coluna_numerica(),
-    ck = coluna_numerica(ck)
+    ck = coluna_numerica(ck),
+    glicemia = coluna_numerica(glicemia),
+    glicose = coluna_numerica(glicose)
     )
 
 df1 <- df1 %>%
@@ -237,13 +243,13 @@ colunas_interesse <- c(
   "GRUPO      MN:0      MP:1",
   "Ano",
   "Há quantos anos",
-  "PARTO                                     0:normal   1:cesariana   2:fórceps  3: induzido",
+  "PARTO                                     0:normal   1:cesariana   2:fórceps",
   "PESO BEBÊ (kg)",
   "SEXO BEBÊ 0:feminino   1:masculino",
   "MESMO PAI 0:não        1:sim      2:não se aplica (primigesta)",
-  "INTERVALO ENTRE PARTOS (meses)",
+  "INTERVALO ENTRE PARTOS (meses) 0:primigesta",
   "PARTO PREMATURO 0:não      1:sim",
-  "GESTAÇÃO MÚLTIPLA   0:não   1:sim"
+  "GESTAÇÃO MÚLTIPLA  (gêmeos) 0:não   1:sim"
   )
 
 renomear_colunas <- c(
@@ -492,10 +498,12 @@ df6 <- df6 %>%
 
 ```{r resumo_df}
 df1 <- df1 %>% mutate(grupo = as.factor(grupo))
+df2 <- df2 %>% mutate(grupo = as.factor(grupo))
 df3 <- df3 %>% mutate(grupo = as.factor(grupo))
 df5 <- df5 %>% mutate(grupo = as.factor(grupo))
 
 df_completo <- left_join(df1 %>% select(-ck),
+                         df2 %>% select(iniciais, grupo, quantos_anos_evento),
                          df3 %>% select(iniciais, grupo, trombomodulina, adma),
                          by = join_by(iniciais, grupo), relationship = "many-to-many") %>%
                left_join(., 
@@ -659,3 +667,54 @@ kbl(
   column_spec(1, bold = T) %>%
   collapse_rows(columns = c(1,7))
 ```
+
+# Outras Informações
+
+```{r}
+Hipertensao <- df_completo$hipertensao; AntiHiper <- df_completo$anti_hiper
+xtabs(~  Hipertensao + AntiHiper)
+
+library(patchwork)
+g1 <- ggplot(data = df_completo) +
+  geom_boxplot(aes(x = as.factor(hipertensao), y = pressao_media))
+
+g2 <- ggplot(data = df_completo) +
+  geom_boxplot(aes(x = as.factor(anti_hiper), y = pressao_media))
+
+g1 + g2
+```
+
+```{r}
+cat_sig <- c("gpsanguineo", 
+              "elitista",
+              "anti_hiper",
+              "hipertensao",
+              "escolaridade",
+              "escolaridade_bin")
+```
+
+
+```{r}
+data <- df_num %>% drop_na() %>% select(-grupo)
+
+num_sig <- tabela_resumo %>% filter(`P(Manh-W)` < 0.1 | `P(Test-T)` < 0.1) %>% pull("Variável") %>% unique()
+data_sig <- data %>% select(all_of(num_sig))
+
+corrplot::corrplot(cor(data_sig) %>% round(3))
+
+# Modelo 1
+teste <- glm(
+  formula = grupo ~ imc  + pressao_media, 
+  family = binomial(link = "logit"), data = df_completo %>% drop_na(imc))
+teste %>% summary()
+100 * (exp( coef(teste)[-1]) - 1)
+
+
+df_completo <- df_completo %>% mutate(imc_estrato = ifelse(imc < 25, "normal", "alterado"))
+teste <- glm(
+  formula = grupo ~ imc_estrato  + pressao_media, 
+  family = binomial(link = "logit"), data = df_completo %>% drop_na(imc))
+teste %>% summary()
+100 * (exp( coef(teste)[-1]) - 1)
+```
+
