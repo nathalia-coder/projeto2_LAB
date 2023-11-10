@@ -706,11 +706,18 @@ data <- df_num %>% drop_na() %>% select(-grupo)
 num_sig <- tabela_resumo %>% filter(`P(Manh-W)` < 0.1 | `P(Test-T)` < 0.1) %>% pull("Variável") %>% unique()
 data_sig <- data %>% select(all_of(num_sig))
 
-corrplot::corrplot(cor(data_sig) %>% round(3))
+corrplot::corrplot(cor(data_sig) %>% round(3),
+                   diag = F, type = "upper", order="hclust"
+                   )
 
 ## Tirando correlacionadas
 num_sig_sem_corr <- c(
   "imc", "pressao_media", "ldl_dosado", "colesterol_total", "filtr_glomerular", "triglicerides")
+
+data_sig_sem_corr <- data %>% select(all_of(num_sig_sem_corr))
+corrplot::corrplot(cor(data_sig_sem_corr), 
+                   method = "color", diag = F, type = "upper",addCoef.col = "black", order="hclust"
+                   )
 ```
 
 * Teste de MLG pra grupo
