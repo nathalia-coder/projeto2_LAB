@@ -539,7 +539,6 @@ df_cat <- df_cat %>%
     df_num$imc <= 29.99 ~ "sobrepeso",
     TRUE ~ "obesidade"
   ))
-df_cat$sangueo<- df1$sangueo
 
 # Novas categorias nas variaveis
 df_num <- df_num %>% mutate(ldl_colesterol = ldl_dosado/colesterol_total) 
@@ -808,6 +807,8 @@ summary(fit_final)
 reglin::ggresiduals(fit_final)
 ```
 
+* Testes para variáveis numéricas: imc, pressao_media e colesterol_total
+
 ```{r}
 df_num_numeric <- df_num[, sapply(df_num, is.numeric)]
 
@@ -826,14 +827,20 @@ variaveis_correlacionadas_com <- colnames(correlacoes)[indices_maior_que_05[, 2]
 pares_correlacionados <- data.frame(
   Variavel1 = variaveis_correlacionadas,
   Variavel2 = variaveis_correlacionadas_com,
-  Correlacao = correlacoes[indices_maior_que_05]
+  Correlacao = correlacoes[indices_maior_que_05] %>% round(3)
 )
 
-pares_correlacionados
+pares_correlacionados %>% 
+  kbl(
+    format.args = list(decimal.mark = ',', big.mark = ".") 
+    ) %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T) %>%
+  collapse_rows(columns = c(1))
 ```
 
 ```{r}
-df_cat$escolaridade_bin<- ifelse(df_cat$escolaridade_bin == "superior", 1, 0)
+escolaridade_bin<- ifelse(df_cat$escolaridade_bin == "superior", 1, 0)
 binarias<- c("grupo","medic_diabetes","medic_hipercol","tabagista","elitista",
              "anti_hiper","hipertensao","diabetes","hipercolesterolemia","sangueo", "escolaridade_bin")
 
@@ -894,12 +901,23 @@ for (var_binaria in binarias) {
 }
 
 # Criar um data frame com os p-valores
-resultados_p_valores <- data.frame(Variavel = binarias, P_valor_IMC = p_valores_imc, P_valor_Pressao_Media = p_valores_pressao_media, P_valor_Colesterol_Total = p_valores_colesterol_total)
+resultados_p_valores <- data.frame(
+  Variavel = binarias, 
+  P_valor_IMC = p_valores_imc, 
+  P_valor_Pressao_Media = p_valores_pressao_media, 
+  P_valor_Colesterol_Total = p_valores_colesterol_total)
 
 # Visualizar os resultados
-print(resultados_p_valores)
-
+resultados_p_valores %>% 
+  kbl(
+    digits = 3,
+    format.args = list(decimal.mark = ',', big.mark = ".") 
+    ) %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
 ```
+
+*  Mais de uma categoria
 
 ```{r}
 maisdeduascategorias<- c("etnia","escolaridade","num_gestacoes","categoriaimc")
@@ -937,12 +955,48 @@ for (numerica in numericas) {
   }
   
   # Armazenar os resultados na lista
-  resultados_kw[[numerica]] <- data.frame(Categoria = categorias, P_Valor = p_valores)
+  resultados_kw[[numerica]] <- data.frame(Categoria = categorias, P_Valor = p_valores %>% round(3))
 }
 
-# Exibir os resultados
-for (numerica in numericas) {
-  cat(sprintf("=== Resultados para %s ===\n", numerica))
-  print(resultados_kw[[numerica]])
-}
+# Exibir os resultados - original
+# for (numerica in numericas) {
+#   cat(sprintf("\n=== Resultados para %s ===\n", numerica))
+#   print(resultados_kw[[numerica]])
+# }
+```
+
+**Resultado para IMC:**
+
+```{r}
+# Exibir os resultados - para html
+resultados_kw[[1]] %>% 
+  kbl(
+    format.args = list(decimal.mark = ',', big.mark = ".") 
+    ) %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
+```
+
+**Resultado para pressao_media:**
+
+```{r}
+# Exibir os resultados - para html
+resultados_kw[[2]] %>% 
+  kbl(
+    format.args = list(decimal.mark = ',', big.mark = ".") 
+    ) %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
+```
+
+**Resultado para colesterol_total:**
+
+```{r}
+# Exibir os resultados - para html
+resultados_kw[[3]] %>% 
+  kbl(
+    format.args = list(decimal.mark = ',', big.mark = ".") 
+    ) %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
 ```
