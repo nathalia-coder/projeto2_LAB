@@ -790,21 +790,21 @@ fit1 <- lm(ldl_dosado ~ imc + pressao_media + colesterol_total + filtr_glomerula
 summary(fit1)
 fit_final<- update(fit1, ~ pressao_media + colesterol_total)
 summary(fit_final)
-reglin::ggresiduals(fit_final)
+#reglin::ggresiduals(fit_final)
 
 ## IMC
 fit1 <- lm(imc ~ pressao_media + colesterol_total + filtr_glomerular + triglicerides, df_num)
 summary(fit1)
 fit_final<- update(fit1, ~ pressao_media + filtr_glomerular + triglicerides)
 summary(fit_final)
-reglin::ggresiduals(fit_final)
+#reglin::ggresiduals(fit_final)
 
 ## Colesterol
 fit1 <- lm(colesterol_total ~ ldl_dosado + imc + pressao_media + filtr_glomerular + triglicerides, df_num)
 summary(fit1)
 fit_final<- update(fit1, ~ . -pressao_media -filtr_glomerular)
 summary(fit_final)
-reglin::ggresiduals(fit_final)
+#reglin::ggresiduals(fit_final)
 ```
 
 * Testes para variáveis numéricas: imc, pressao_media e colesterol_total
