@@ -1,8 +1,6 @@
 ---
 #title: "Projeto I"
 #author:
-#- Bárbara Oliveira Ribeiro
-#- Nathalia Gabriella Ferreira dos Santos
 #date: "`r Sys.Date()`"
 output:
   bookdown::html_document2:
@@ -25,7 +23,7 @@ knitr::opts_chunk$set(
 
 ```{r pacotes, message=FALSE, warning=FALSE}
 library(tidyverse)
-library(readxl)
+library(readxl) 
 library(patchwork) # para parcionar os graficos
 library(janitor)
 library(kableExtra)
