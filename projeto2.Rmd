@@ -230,7 +230,11 @@ df1 <- df1 %>%
     )
 
 df1 <- df1 %>%
-  mutate_at(vars(-c(iniciais, grupo, escolaridade, doenca, etnia, num_gestacoes)), as.numeric)
+  mutate_at(vars(-c(iniciais, grupo, escolaridade, doenca, etnia, num_gestacoes)), as.numeric)%>%
+  mutate(sangue_o = ifelse(gpsanguineo == 2, 1, 0),
+         razaoldl = ldl_dosado/colesterol_total,
+         num_gestacoes = ifelse(num_gestacoes == 1, 1, ifelse(num_gestacoes == 2, 2, 3))
+         )
 ```
 
 ```{r tratamento_df2}
@@ -517,6 +521,12 @@ num <- c("grupo", cols[! cols %in% cat])
 
 df_num <- df_completo %>% select(all_of(num))
 df_cat <- df_completo %>% select(all_of(cat))
+df_cat <- df_cat %>%
+  mutate(categoriaimc = case_when(
+    df_num$imc <= 24.99 ~ "magraza/eutrofia",
+    df_num$imc <= 29.99 ~ "sobrepeso",
+    TRUE ~ "obesidade"
+  ))
 
 # Novas categorias nas variaveis
 df_num <- df_num %>% mutate(ldl_colesterol = ldl_dosado/colesterol_total) 
@@ -785,3 +795,141 @@ summary(fit_final)
 reglin::ggresiduals(fit_final)
 ```
 
+```{r}
+df_num_numeric <- df_num[, sapply(df_num, is.numeric)]
+
+variaveis_interesse <- c("imc", "pressao_media", "colesterol_total")
+
+correlacoes <- cor(df_num_numeric[, variaveis_interesse], df_num_numeric[, setdiff(names(df_num_numeric), variaveis_interesse)], use = "pairwise.complete.obs")
+
+# Obter índices das correlações maiores que 0.5
+indices_maior_que_05 <- which(abs(correlacoes) > 0.5, arr.ind = TRUE)
+
+# Obter os nomes das variáveis correspondentes
+variaveis_correlacionadas <- rownames(correlacoes)[indices_maior_que_05[, 1]]
+variaveis_correlacionadas_com <- colnames(correlacoes)[indices_maior_que_05[, 2]]
+
+# Criar um data frame com os pares de variáveis correlacionadas
+pares_correlacionados <- data.frame(
+  Variavel1 = variaveis_correlacionadas,
+  Variavel2 = variaveis_correlacionadas_com,
+  Correlacao = correlacoes[indices_maior_que_05]
+)
+
+pares_correlacionados
+```
+
+```{r}
+escolaridade_bin<- ifelse(df_cat$escolaridade_bin == "superior", 1, 0)
+binarias<- c("grupo","medic_diabetes","medic_hipercol","tabagista","elitista",
+             "anti_hiper","hipertensao","diabetes","hipercolesterolemia","sangueo", "escolaridade_bin")
+
+maisdeduascategorias<- c("etnia","escolaridade","num_gestacoes","categoriaimc")
+imc<- df_num$imc
+pressao_media<- df_num$pressao_media
+colesterol_total<- df_num$colesterol_total
+
+
+# Lista para armazenar os p-valores
+p_valores_imc <- numeric()
+p_valores_pressao_media <- numeric()
+p_valores_colesterol_total <- numeric()
+
+# Loop sobre as variáveis binárias
+for (var_binaria in binarias) {
+  grupo1_imc <- imc[df_cat[[var_binaria]] == 0]
+  grupo2_imc <- imc[df_cat[[var_binaria]] == 1]
+  
+  grupo1_pressao_media <- pressao_media[df_cat[[var_binaria]] == 0]
+  grupo2_pressao_media <- pressao_media[df_cat[[var_binaria]] == 1]
+  
+  grupo1_colesterol_total <- colesterol_total[df_cat[[var_binaria]] == 0]
+  grupo2_colesterol_total <- colesterol_total[df_cat[[var_binaria]] == 1]
+  
+  # Verificar se há dados suficientes para realizar o teste t para imc
+  if (length(grupo1_imc) >= 3 & length(grupo2_imc) >= 3) {
+    # Teste t de Student para imc
+    resultado_t_test_imc <- t.test(grupo1_imc, grupo2_imc)
+    
+    # Armazenar o p-valor
+    p_valores_imc <- c(p_valores_imc, resultado_t_test_imc$p.value)
+  } else {
+    p_valores_imc <- c(p_valores_imc, NA)
+  }
+  
+  # Verificar se há dados suficientes para realizar o teste t para pressao_media
+  if (length(grupo1_pressao_media) >= 3 & length(grupo2_pressao_media) >= 3) {
+    # Teste t de Student para pressao_media
+    resultado_t_test_pressao_media <- t.test(grupo1_pressao_media, grupo2_pressao_media)
+    
+    # Armazenar o p-valor
+    p_valores_pressao_media <- c(p_valores_pressao_media, resultado_t_test_pressao_media$p.value)
+  } else {
+    p_valores_pressao_media <- c(p_valores_pressao_media, NA)
+  }
+  
+  # Verificar se há dados suficientes para realizar o teste t para colesterol_total
+  if (length(grupo1_colesterol_total) >= 3 & length(grupo2_colesterol_total) >= 3) {
+    # Teste t de Student para colesterol_total
+    resultado_t_test_colesterol_total <- t.test(grupo1_colesterol_total, grupo2_colesterol_total)
+    
+    # Armazenar o p-valor
+    p_valores_colesterol_total <- c(p_valores_colesterol_total, resultado_t_test_colesterol_total$p.value)
+  } else {
+    p_valores_colesterol_total <- c(p_valores_colesterol_total, NA)
+  }
+}
+
+# Criar um data frame com os p-valores
+resultados_p_valores <- data.frame(Variavel = binarias, P_valor_IMC = p_valores_imc, P_valor_Pressao_Media = p_valores_pressao_media, P_valor_Colesterol_Total = p_valores_colesterol_total)
+
+# Visualizar os resultados
+print(resultados_p_valores)
+
+```
+
+```{r}
+maisdeduascategorias<- c("etnia","escolaridade","num_gestacoes","categoriaimc")
+
+df_cat$etnia<- as.factor(df_cat$etnia)
+df_cat$escolaridade<- as.factor(df_cat$escolaridade)
+df_cat$num_gestacoes<- as.factor(df_cat$num_gestacoes)
+df_cat$categoriaimc<- as.factor(df_cat$categoriaimc)
+
+# Lista para armazenar os resultados do teste de Kruskal-Wallis
+resultados_kw <- list()
+
+# Variáveis numéricas
+numericas <- c("imc", "pressao_media", "colesterol_total")
+
+# Loop sobre as variáveis numéricas
+for (numerica in numericas) {
+  # Vetores para armazenar os resultados
+  categorias <- maisdeduascategorias
+  p_valores <- numeric(length(categorias))
+  
+  # Loop sobre as variáveis categóricas com mais de duas categorias
+  for (i in seq_along(categorias)) {
+    # Verificar se há dados suficientes em cada grupo
+    if (all(table(df_cat[[categorias[i]]]) >= 3)) {
+      # Teste de Kruskal-Wallis
+      resultado_kw <- kruskal.test(df_num[[numerica]] ~ df_cat[[categorias[i]]])
+      
+      # Armazenar o p-valor
+      p_valores[i] <- resultado_kw$p.value
+    } else {
+      cat(sprintf("Não foi possível realizar o teste de Kruskal-Wallis para %s e %s devido à falta de dados.\n", numerica, categorias[i]))
+      p_valores[i] <- NA
+    }
+  }
+  
+  # Armazenar os resultados na lista
+  resultados_kw[[numerica]] <- data.frame(Categoria = categorias, P_Valor = p_valores)
+}
+
+# Exibir os resultados
+for (numerica in numericas) {
+  cat(sprintf("=== Resultados para %s ===\n", numerica))
+  print(resultados_kw[[numerica]])
+}
+```
