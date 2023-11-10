@@ -539,6 +539,7 @@ df_cat <- df_cat %>%
     df_num$imc <= 29.99 ~ "sobrepeso",
     TRUE ~ "obesidade"
   ))
+df_cat$sangueo<- df1$sangueo
 
 # Novas categorias nas variaveis
 df_num <- df_num %>% mutate(ldl_colesterol = ldl_dosado/colesterol_total) 
@@ -832,7 +833,7 @@ pares_correlacionados
 ```
 
 ```{r}
-escolaridade_bin<- ifelse(df_cat$escolaridade_bin == "superior", 1, 0)
+df_cat$escolaridade_bin<- ifelse(df_cat$escolaridade_bin == "superior", 1, 0)
 binarias<- c("grupo","medic_diabetes","medic_hipercol","tabagista","elitista",
              "anti_hiper","hipertensao","diabetes","hipercolesterolemia","sangueo", "escolaridade_bin")
 
