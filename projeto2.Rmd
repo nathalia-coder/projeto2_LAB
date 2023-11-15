@@ -231,8 +231,8 @@ df1 <- df1 %>%
 
 df1 <- df1 %>%
   mutate_at(vars(-c(iniciais, grupo, escolaridade, doenca, etnia, num_gestacoes)), as.numeric)%>%
-  mutate(sangueo = ifelse(gpsanguineo == 2, 1, 0),
-         razaoldl = ldl_dosado/colesterol_total,
+  mutate(
+    razaoldl = ldl_dosado/colesterol_total,
          num_gestacoes = ifelse(num_gestacoes == 1, 1, ifelse(num_gestacoes == 2, 2, 3))
          )
 ```
@@ -517,34 +517,40 @@ df3 <- df3 %>% mutate(grupo = as.factor(grupo))
 df5 <- df5 %>% mutate(grupo = as.factor(grupo))
 
 df_completo <- left_join(df1 %>% select(-ck),
-                         df2 %>% select(iniciais, grupo, quantos_anos_evento),
+                         df2 %>% select(iniciais, grupo, quantos_anos_evento)) %>% 
+               left_join(.,
                          df3 %>% select(iniciais, grupo, trombomodulina, adma),
                          by = join_by(iniciais, grupo), relationship = "many-to-many") %>%
                left_join(., 
                          df5 %>% select(iniciais,grupo,hipertensao,diabetes,hipercolesterolemia),
                          by = join_by(iniciais, grupo), relationship = "many-to-many") %>% 
-  select(- iniciais)
+  select(- iniciais) %>% 
+  # Inserindo variaveis
+  mutate(
+    # nenhuma numerica
+    # categoricas
+    sangueo = ifelse(gpsanguineo == 2, "1", "0"),
+    categoriaimc = case_when(
+      imc <= 24.99 ~ "magraza/eutrofia",
+      imc <= 29.99 ~ "sobrepeso",
+      TRUE ~ "obesidade") %>% as.factor(),
+    escolaridade_bin = ifelse(escolaridade %in% c(3, 4), "superior", "basico") %>% as.factor(),
+    imcbinario = ifelse(imc < 24.99, "normal", "alterado") %>% as.factor()
+)
+
+# Reajustando niveis das variaveis categoricas
+levels(df_completo$categoriaimc) <- c("magraza/eutrofia","sobrepeso","obesidade")
+levels(df_completo$imcbinario) <- c("normal", "alterado")
 
 cols <- df_completo %>% names()
 cat <- c("grupo", "etnia", "escolaridade", "doenca", "num_gestacoes", "gpsanguineo",
          "rh", "medic_diabetes", "medic_hipercol", "tabagista", "elitista", "anti_hiper",
-         "hipertensao", "diabetes", "hipercolesterolemia")
+         "hipertensao", "diabetes", "hipercolesterolemia", "sangueo", "categoriaimc",
+         "imcbinario", "escolaridade_bin")
 num <- c("grupo", cols[! cols %in% cat])
 
 df_num <- df_completo %>% select(all_of(num))
 df_cat <- df_completo %>% select(all_of(cat))
-df_cat <- df_cat %>%
-  mutate(categoriaimc = case_when(
-    df_num$imc <= 24.99 ~ "magraza/eutrofia",
-    df_num$imc <= 29.99 ~ "sobrepeso",
-    TRUE ~ "obesidade"
-  ))
-
-# Novas categorias nas variaveis
-df_num <- df_num %>% mutate(ldl_colesterol = ldl_dosado/colesterol_total) 
-
-df_cat <- df_cat %>% mutate(
-  escolaridade_bin = ifelse(escolaridade %in% c(3, 4), "superior", "basico"))
 ```
 
 
@@ -696,28 +702,6 @@ kbl(
 Hipertensao <- df_completo$hipertensao  %>% as.factor(); AntiHiper <- df_completo$anti_hiper %>% as.factor()
 tab <- xtabs(~  Hipertensao + AntiHiper)
 tab
-
-# df_completo %>% group_by(hipertensao, anti_hiper) %>% summarise(N = n()) %>% pivot_wider(names_from = anti_hiper, names_prefix = "anti_hiper_", values_from = N)
-
-teste <- stats::chisq.test(tab, simulate.p.value = TRUE,  B = 10000) # df deu NA, estranho
-
-library(patchwork)
-g1 <- ggplot(data = df_completo) +
-  geom_boxplot(aes(x = as.factor(hipertensao), y = pressao_media))
-
-g2 <- ggplot(data = df_completo) +
-  geom_boxplot(aes(x = as.factor(anti_hiper), y = pressao_media))
-
-g1 + g2
-```
-
-```{r}
-cat_sig <- c("gpsanguineo", 
-              "elitista",
-              "anti_hiper",
-              "hipertensao",
-              "escolaridade",
-              "escolaridade_bin")
 ```
 
 * Correlações:
@@ -742,102 +726,220 @@ corrplot::corrplot(cor(data_sig_sem_corr),
                    )
 ```
 
-* Teste de MLG pra grupo
+# MLG
 
-```{r}
-# Modelo 1
-teste <- glm(
-  formula = grupo ~ imc  + pressao_media, 
-  family = binomial(link = "logit"), data = df_completo %>% drop_na(imc))
-teste %>% summary()
-100 * (exp( coef(teste)[-1]) - 1)
-
-
-df_completo <- df_completo %>% mutate(imc_estrato = ifelse(imc < 25, "normal", "alterado"))
-teste <- glm(
-  formula = grupo ~ imc_estrato  + pressao_media, 
-  family = binomial(link = "logit"), data = df_completo %>% drop_na(imc))
-teste %>% summary()
-100 * (exp( coef(teste)[-1]) - 1)
-
-teste <- glm(
-  formula = grupo ~ imc  + pressao_media + filtr_glomerular, 
-  family = binomial(link = "logit"), data = df_completo %>% drop_na(imc))
-teste %>% summary()
-100 * (exp( coef(teste)[-1]) - 1)
-
-teste <- glm(
-  formula = grupo ~ imc_estrato  + pressao_media  + filtr_glomerular, 
-  family = binomial(link = "logit"), data = df_completo %>% drop_na(imc))
-teste %>% summary()
-100 * (exp( coef(teste)[-1]) - 1)
-
-
-teste <- glm(
-  formula = grupo ~ imc_estrato  + pressao_media  + filtr_glomerular + ldl_dosado, 
-  family = binomial(link = "logit"), data = df_completo %>% drop_na(imc))
-teste %>% summary()
-100 * (exp( coef(teste)[-1]) - 1)
+```{r covariaveis_regressao}
+df_reg <- df_completo %>% 
+  select(
+    grupo,
+    # numericas
+    razaoldl, ldl_dosado, pressao_media, pressao_dias, pressao_sis, creatinina, trombomodulina,
+    imc, adma, lym, filtr_glomerular, rbc, wbc, hdl, triglicerides, colesterol_total,
+    # categoricas
+    hipertensao, gpsanguineo, escolaridade_bin, categoriaimc, imcbinario
+    )
 ```
 
-* Teste de LM pra variaveis numéricas
-
-```{r}
-#num_sig_sem_corr # variaveis numericas pra reg
-
-## LDL
-fit1 <- lm(ldl_dosado ~ imc + pressao_media + colesterol_total + filtr_glomerular + triglicerides, df_num)
-summary(fit1)
-fit_final<- update(fit1, ~ pressao_media + colesterol_total)
-summary(fit_final)
-#reglin::ggresiduals(fit_final)
-
-## IMC
-fit1 <- lm(imc ~ pressao_media + colesterol_total + filtr_glomerular + triglicerides, df_num)
-summary(fit1)
-fit_final<- update(fit1, ~ pressao_media + filtr_glomerular + triglicerides)
-summary(fit_final)
-#reglin::ggresiduals(fit_final)
-
-## Colesterol
-fit1 <- lm(colesterol_total ~ ldl_dosado + imc + pressao_media + filtr_glomerular + triglicerides, df_num)
-summary(fit1)
-fit_final<- update(fit1, ~ . -pressao_media -filtr_glomerular)
-summary(fit_final)
-#reglin::ggresiduals(fit_final)
-```
-
-* Testes para variáveis numéricas: imc, pressao_media e colesterol_total
-
-```{r}
-df_num_numeric <- df_num[, sapply(df_num, is.numeric)]
-
-variaveis_interesse <- c("imc", "pressao_media", "colesterol_total")
-
-correlacoes <- cor(df_num_numeric[, variaveis_interesse], df_num_numeric[, setdiff(names(df_num_numeric), variaveis_interesse)], use = "pairwise.complete.obs")
-
-# Obter índices das correlações maiores que 0.5
-indices_maior_que_05 <- which(abs(correlacoes) > 0.5, arr.ind = TRUE)
-
-# Obter os nomes das variáveis correspondentes
-variaveis_correlacionadas <- rownames(correlacoes)[indices_maior_que_05[, 1]]
-variaveis_correlacionadas_com <- colnames(correlacoes)[indices_maior_que_05[, 2]]
-
-# Criar um data frame com os pares de variáveis correlacionadas
-pares_correlacionados <- data.frame(
-  Variavel1 = variaveis_correlacionadas,
-  Variavel2 = variaveis_correlacionadas_com,
-  Correlacao = correlacoes[indices_maior_que_05] %>% round(3)
-)
-
-pares_correlacionados %>% 
-  kbl(
-    format.args = list(decimal.mark = ',', big.mark = ".") 
-    ) %>%
+```{r funcao_resumo_ajuste}
+ConcluiAjuste <- function(fit){
+  tabela <- cbind(
+    Variavel = names(coef(fit))[-1],
+    Efeito = paste0(100 * (exp( coef(fit)[-1]) - 1) %>% round(4),"%")
+    ) %>% as_tibble()
+  
+  kbl(tabela) %>%
   kable_paper(full_width = F) %>%
-  column_spec(1, bold = T) %>%
-  collapse_rows(columns = c(1))
+  column_spec(1, bold = T)
+}
 ```
+
+## Para Pressão Arterial Sistólica (PAS)
+
+Categorização: 
+
+*Normal:* Pressão Sistólica < 140mmHg
+*Alterada:* Pressão Sistólica > 140mmHg
+
+```{r resposta_reg_pressao_sis}
+df_reg <- df_reg %>% mutate(
+  pas = ifelse(pressao_sis < 140, 0, 1) %>% as.factor()
+)
+```
+
+* IMC não categorizado
+
+```{r ajuste_pressao_sis1}
+# Modelo inicial
+teste <- glm(
+  formula = pas ~ grupo + razaoldl + creatinina + imc + hdl + hipertensao + gpsanguineo + escolaridade_bin,
+  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
+teste %>% summary()
+
+# Modelo final
+teste <- glm(
+  formula = pas ~ grupo + hipertensao + imc,
+  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
+teste %>% summary()
+ConcluiAjuste(teste)
+```
+
+* IMC categorizado nenhum deu significativo
+
+* Usando Tromobulina e Adma obtivemos algo não significativo para ambos
+
+```{r ajuste_pressao_sis2}
+teste <- glm(
+  formula = pas ~ grupo + hipertensao + imc + adma + trombomodulina,
+  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc, adma, trombomodulina))
+teste %>% summary()
+ConcluiAjuste(teste)
+```
+
+## Para Pressão Arterial Diástólica (PAD)
+
+Categorização: 
+
+*Normal:* Pressão Diástólica < 90mmHg
+*Alterada:* Pressão Diástólica > 90mmHg
+
+```{r resposta_reg_pressao_dias}
+df_reg <- df_reg %>% mutate(
+  pad = ifelse(pressao_dias < 90, 0, 1) %>% as.factor()
+)
+```
+
+* IMC não categorizado
+
+Ou razão ldl colesterol era significativo ou ldl_dosado. Só *LDL Dosado* foi significativo no modelo final. Razão ldl deu grande "efeito" mas com alta variabilida, tornando-o não significativo.
+
+
+```{r ajuste_pressao_dias1}
+# Modelo inicial
+teste <- glm(
+  formula = pad ~ grupo + razaoldl + creatinina + imc + hdl + hipertensao + gpsanguineo + escolaridade_bin,
+  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
+teste %>% summary()
+
+# Modelo final
+teste <- glm(
+  formula = pad ~ grupo + hipertensao + ldl_dosado + imc,
+  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
+teste %>% summary()
+ConcluiAjuste(teste)
+```
+
+* IMC categorizado
+
+A categoria binária resultou em algo contraintuitivo, que estar com imc alterado resultava em redução na chance de estar com alta pressão diastólica
+
+```{r}
+teste <- glm(
+  formula = pad ~ grupo + hipertensao + ldl_dosado + imcbinario,
+  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
+teste %>% summary()
+ConcluiAjuste(teste)
+
+teste <- glm(
+  formula = pad ~ grupo + hipertensao + ldl_dosado + categoriaimc,
+  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
+teste %>% summary()
+ConcluiAjuste(teste)
+```
+
+* Usando Tromobulina e Adma obtivemos algo não significativo para ambos
+
+```{r ajuste_pressao_dias2}
+teste <- glm(
+  formula = pad ~ grupo + hipertensao + imc + adma + trombomodulina,
+  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc, adma, trombomodulina))
+teste %>% summary()
+ConcluiAjuste(teste)
+```
+
+# LM
+
+## Para Pressão Arterial Sistólica
+
+```{r}
+teste <- lm(pressao_sis ~ grupo + hipertensao + imc , data = df_reg)
+teste %>% summary()
+reglin::ggresiduals(teste)
+shapiro.test(teste$residuals)
+```
+
+* IMC categorizado
+
+```{r}
+teste <- lm(pressao_sis ~ grupo + hipertensao + categoriaimc , data = df_reg)
+teste %>% summary()
+reglin::ggresiduals(teste)
+shapiro.test(teste$residuals)
+```
+
+```{r}
+teste <- lm(pressao_sis ~ grupo + hipertensao + imcbinario , data = df_reg)
+teste %>% summary()
+reglin::ggresiduals(teste)
+shapiro.test(teste$residuals)
+```
+
+## Para Pressão Arterial Diástólica
+
+```{r}
+teste <- lm(pressao_dias ~ grupo + hipertensao + imc , data = df_reg)
+teste %>% summary()
+reglin::ggresiduals(teste)
+shapiro.test(teste$residuals)
+```
+
+* IMC categorizado
+
+```{r}
+teste <- lm(pressao_dias ~ grupo + hipertensao + categoriaimc , data = df_reg)
+teste %>% summary()
+reglin::ggresiduals(teste)
+shapiro.test(teste$residuals)
+```
+
+```{r}
+teste <- lm(pressao_dias ~ grupo + hipertensao + imcbinario , data = df_reg)
+teste %>% summary()
+reglin::ggresiduals(teste)
+shapiro.test(teste$residuals)
+```
+
+## Para Pressão Arterial Média
+
+Foi retirado um outlier
+
+* IMC não categorizado
+
+```{r}
+df_reg_sem_out <- df_reg[-172,]
+
+teste <- lm(pressao_media ~ grupo + hipertensao + imc , data = df_reg_sem_out)
+teste %>% summary()
+reglin::ggresiduals(teste)
+shapiro.test(teste$residuals)
+```
+
+* IMC categorizado
+
+```{r}
+teste <- lm(pressao_media ~ grupo + hipertensao + categoriaimc , data = df_reg_sem_out)
+teste %>% summary()
+reglin::ggresiduals(teste)
+shapiro.test(teste$residuals)
+```
+
+```{r}
+teste <- lm(pressao_media ~ grupo + hipertensao + imcbinario , data = df_reg_sem_out)
+teste %>% summary()
+reglin::ggresiduals(teste)
+shapiro.test(teste$residuals)
+```
+
+# Outras Alterações
 
 ```{r}
 escolaridade_bin<- ifelse(df_cat$escolaridade_bin == "superior", 1, 0)
