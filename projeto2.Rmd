@@ -538,6 +538,8 @@ df_completo <- left_join(df1 %>% select(-ck),
     imcbinario = ifelse(imc < 24.99, "normal", "alterado") %>% as.factor()
 )
 
+df_completo$hipertensao <- ifelse(df_completo$hipertensao == 0 & df_completo$anti_hiper == 1, 1, df_completo$hipertensao)
+
 # Reajustando niveis das variaveis categoricas
 levels(df_completo$categoriaimc) <- c("magraza/eutrofia","sobrepeso","obesidade")
 levels(df_completo$imcbinario) <- c("normal", "alterado")
@@ -696,12 +698,68 @@ kbl(
 
 # Outras Informações
 
+* Descritiva ADMA e trombomodulina
+
+```{r}
+# Gráfico de histograma
+g1 <- ggplot(df3, aes(x = adma)) +
+  geom_histogram(fill = "#4C78A8", color = "#4C78A8", bins = 10, alpha = 0.7) +
+  labs(title= "Descritivas ADMA\n\n Histograma ADMA", x = "adma", y = "Frequência") +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 11), 
+        axis.title = element_text(size = 13),
+        plot.title = element_text(size = 15)) +
+  facet_grid(.~1, scales = "free_y")
+
+# Gráfico de boxplot
+g2 <- ggplot(df3, aes(y = adma)) +
+  geom_boxplot(fill = "#F28E2B", color = "#F28E2B", alpha = 0.7) +
+  labs(title = "\n\nBoxplot ADMA", y = "adma") +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 11), 
+        axis.title = element_text(size = 13),
+        plot.title = element_text(size = 15))
+
+g1 + g2
+
+# Gráfico de histograma
+g3 <- ggplot(df3, aes(x = trombomodulina)) +
+  geom_histogram(fill = "#4C78A8", color = "#4C78A8", bins = 10, alpha = 0.7) +
+  labs(title = "Descritivas trombomodulina\n\n Histograma trombomodulina", x = "trombomodulina", y = "Frequência") +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 11), 
+        axis.title = element_text(size = 13),
+        plot.title = element_text(size = 15)) +
+  facet_grid(.~1, scales = "free_y")
+
+# Gráfico de boxplot
+g4 <- ggplot(df3, aes(y = trombomodulina)) +
+  geom_boxplot(fill = "#F28E2B", color = "#F28E2B", alpha = 0.7) +
+  labs(title = "\n\nBoxplot trombomodulina", y = "trombomodulina") +
+  theme_minimal() +
+  theme(axis.text = element_text(size = 11), 
+        axis.title = element_text(size = 13),
+        plot.title = element_text(size = 15))
+
+g3 + g4
+```
+
 * Sobre Hipertensão e Usar anti hipertensivos
 
 ```{r}
 Hipertensao <- df_completo$hipertensao  %>% as.factor(); AntiHiper <- df_completo$anti_hiper %>% as.factor()
 tab <- xtabs(~  Hipertensao + AntiHiper)
 tab
+```
+
+* Comparação grupos em relação a hipertensão e uso de anti hipertensivos
+
+```{r}
+manti_hiper<- df_completo %>% select(grupo, anti_hiper)
+table(manti_hiper)
+
+mhiper<- df_completo %>% select(grupo, hipertensao)
+table(mhiper)
 ```
 
 * Correlações:
