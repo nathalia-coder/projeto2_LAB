@@ -39,6 +39,7 @@ df3 <- read_xlsx("dados.xlsx", sheet = "ELISAs")
 df4 <- read_xlsx("dados.xlsx", sheet = "Imunoturbidimetria")
 df5 <- read_xlsx("dados.xlsx", sheet = "Doenças Crônicas")
 df6 <- read_xlsx("dados.xlsx", sheet = "Aspectos Psicológicos")
+df7 <- read_xlsx("dados.xlsx", sheet = "SÍNDROME METABÓLICA")
 ```
 
 ```{r funcoes_trata_dados}
@@ -498,6 +499,44 @@ df6 <- df6 %>%
   mutate_at(vars(-c(iniciais)), as.numeric)
 ```
 
+```{r tratamento_df7}
+#### DF7: Sindrome metabolica
+
+colunas_interesse <- c(
+ "GRUPO      MN:0      MP:1", 
+ "USA MEDICAMENTO PARA HIPERCOLESTEROLEMIA 0:não 1:sim",                                
+ "USA MEDICAMENTO PARA DIABETES 0:não 1:sim",
+ "PA > 130/85 e/ou uso de anti-hipertensivo 0:não 1:sim",
+ "CINTURA >88CM 0: não 1: sim",                                                       
+ "TG > 150 mg/dL 0: não 1: sim",
+ "HDL < 50 0: não 1: sim"
+ )
+
+renomear_colunas <- c(
+ "grupo", 
+ "anti_hipercolesterolemia",
+ "anti_diabetes",
+ "pa",
+ "cintura",
+ "tg",
+ "hdl"
+)
+
+df7 <- df7 %>% dplyr::select(all_of(colunas_interesse))
+
+colnames(df7) <- renomear_colunas
+
+df7 <- df7 %>% drop_na(grupo) %>% 
+  mutate(
+  pa = coluna_numerica(pa),
+  cintura = coluna_numerica(cintura),
+  tg = coluna_numerica(tg),
+  hdl = coluna_numerica(hdl)
+)
+
+df7[] <- lapply(df7, as.numeric)
+```
+
 ```{r resumo_df}
 posicoes_duplicadas <- which(duplicated(df1$iniciais))
 df1$iniciais[posicoes_duplicadas] <- paste0(df1$iniciais[posicoes_duplicadas], "2")
@@ -784,17 +823,17 @@ corrplot::corrplot(cor(data_sig_sem_corr),
                    )
 ```
 
-# MLG
+# Regressões lineares 
 
 ```{r covariaveis_regressao}
 df_reg <- df_completo %>% 
   select(
     grupo,
     # numericas
-    razaoldl, ldl_dosado, pressao_media, pressao_dias, pressao_sis, creatinina, trombomodulina,
+    idade, cintura, razaoldl, ldl_dosado, pressao_media, pressao_dias, pressao_sis, creatinina, trombomodulina,
     imc, adma, lym, filtr_glomerular, rbc, wbc, hdl, triglicerides, colesterol_total,
     # categoricas
-    hipertensao, gpsanguineo, escolaridade_bin, categoriaimc, imcbinario
+    hipertensao, gpsanguineo, escolaridade_bin, categoriaimc, imcbinario, anti_hiper, sangueo, escolaridade
     )
 ```
 
@@ -811,190 +850,52 @@ ConcluiAjuste <- function(fit){
 }
 ```
 
-## Para Pressão Arterial Sistólica (PAS)
-
-Categorização: 
-
-*Normal:* Pressão Sistólica < 140mmHg
-*Alterada:* Pressão Sistólica > 140mmHg
-
-```{r resposta_reg_pressao_sis}
-df_reg <- df_reg %>% mutate(
-  pas = ifelse(pressao_sis < 140, 0, 1) %>% as.factor()
-)
+### PAS adicionei idade
+ 
+```{r}
+modelopas <- lm(pressao_sis ~ grupo + idade + anti_hiper + imc, data = df_reg)
+modelopas %>% summary()
+##reglin::ggresiduals(teste)
+shapiro.test(modelopas$residuals)
 ```
 
-* IMC não categorizado
-
-```{r ajuste_pressao_sis1}
-# Modelo inicial
-teste <- glm(
-  formula = pas ~ grupo + razaoldl + creatinina + imc + hdl + hipertensao + gpsanguineo + escolaridade_bin,
-  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
-teste %>% summary()
-
-# Modelo final
-teste <- glm(
-  formula = pas ~ grupo + hipertensao + imc,
-  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
-teste %>% summary()
-ConcluiAjuste(teste)
-```
-
-* IMC categorizado nenhum deu significativo
-
-* Usando Tromobulina e Adma obtivemos algo não significativo para ambos
-
-```{r ajuste_pressao_sis2}
-teste <- glm(
-  formula = pas ~ grupo + hipertensao + imc + adma + trombomodulina,
-  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc, adma, trombomodulina))
-teste %>% summary()
-ConcluiAjuste(teste)
-```
-
-## Para Pressão Arterial Diástólica (PAD)
-
-Categorização: 
-
-*Normal:* Pressão Diástólica < 90mmHg
-*Alterada:* Pressão Diástólica > 90mmHg
-
-```{r resposta_reg_pressao_dias}
-df_reg <- df_reg %>% mutate(
-  pad = ifelse(pressao_dias < 90, 0, 1) %>% as.factor()
-)
-```
-
-* IMC não categorizado
-
-Ou razão ldl colesterol era significativo ou ldl_dosado. Só *LDL Dosado* foi significativo no modelo final. Razão ldl deu grande "efeito" mas com alta variabilida, tornando-o não significativo.
-
-
-```{r ajuste_pressao_dias1}
-# Modelo inicial
-teste <- glm(
-  formula = pad ~ grupo + razaoldl + creatinina + imc + hdl + hipertensao + gpsanguineo + escolaridade_bin,
-  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
-teste %>% summary()
-
-# Modelo final
-teste <- glm(
-  formula = pad ~ grupo + hipertensao + ldl_dosado + imc,
-  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
-teste %>% summary()
-ConcluiAjuste(teste)
-```
-
-* IMC categorizado
-
-A categoria binária resultou em algo contraintuitivo, que estar com imc alterado resultava em redução na chance de estar com alta pressão diastólica
+### PAD adicionei idade
 
 ```{r}
-teste <- glm(
-  formula = pad ~ grupo + hipertensao + ldl_dosado + imcbinario,
-  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
-teste %>% summary()
-ConcluiAjuste(teste)
-
-teste <- glm(
-  formula = pad ~ grupo + hipertensao + ldl_dosado + categoriaimc,
-  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc))
-teste %>% summary()
-ConcluiAjuste(teste)
+modelopad <- lm(pressao_dias ~ grupo + anti_hiper + imc + idade, data = df_reg)
+modelopad %>% summary()
+#reglin::ggresiduals(teste)
+shapiro.test(modelopad$residuals)
 ```
 
-* Usando Tromobulina e Adma obtivemos algo não significativo para ambos
-
-```{r ajuste_pressao_dias2}
-teste <- glm(
-  formula = pad ~ grupo + hipertensao + imc + adma + trombomodulina,
-  family = binomial(link = "logit"), data = df_reg %>% drop_na(imc, adma, trombomodulina))
-teste %>% summary()
-ConcluiAjuste(teste)
-```
-
-# LM
-
-## Para Pressão Arterial Sistólica
+### PAM adicionei idade
 
 ```{r}
-teste <- lm(pressao_sis ~ grupo + hipertensao + imc , data = df_reg)
-teste %>% summary()
-reglin::ggresiduals(teste)
-shapiro.test(teste$residuals)
+modelopam <- lm(pressao_media ~ grupo + anti_hiper + imc + idade, data = df_reg)
+modelopam %>% summary()
+#reglin::ggresiduals(teste)
+shapiro.test(modelopam$residuals)
 ```
 
-* IMC categorizado
+### IMC
 
 ```{r}
-teste <- lm(pressao_sis ~ grupo + hipertensao + categoriaimc , data = df_reg)
-teste %>% summary()
-reglin::ggresiduals(teste)
-shapiro.test(teste$residuals)
+modeloimc <- lm(imc ~ grupo + pressao_media + triglicerides, df_reg)
+summary(modeloimc)
+shapiro.test(modeloimc$residuals)
+qqnorm(modeloimc$residuals); qqline(modeloimc$residuals)
+ConcluiAjuste(modeloimc)
+#reglin::ggresiduals(fit_final)
 ```
 
-```{r}
-teste <- lm(pressao_sis ~ grupo + hipertensao + imcbinario , data = df_reg)
-teste %>% summary()
-reglin::ggresiduals(teste)
-shapiro.test(teste$residuals)
-```
-
-## Para Pressão Arterial Diástólica
+### LDL pq deixamos triglicerides?
 
 ```{r}
-teste <- lm(pressao_dias ~ grupo + hipertensao + imc , data = df_reg)
-teste %>% summary()
-reglin::ggresiduals(teste)
-shapiro.test(teste$residuals)
-```
-
-* IMC categorizado
-
-```{r}
-teste <- lm(pressao_dias ~ grupo + hipertensao + categoriaimc , data = df_reg)
-teste %>% summary()
-reglin::ggresiduals(teste)
-shapiro.test(teste$residuals)
-```
-
-```{r}
-teste <- lm(pressao_dias ~ grupo + hipertensao + imcbinario , data = df_reg)
-teste %>% summary()
-reglin::ggresiduals(teste)
-shapiro.test(teste$residuals)
-```
-
-## Para Pressão Arterial Média
-
-Foi retirado um outlier
-
-* IMC não categorizado
-
-```{r}
-df_reg_sem_out <- df_reg[-172,]
-
-teste <- lm(pressao_media ~ grupo + hipertensao + imc , data = df_reg_sem_out)
-teste %>% summary()
-reglin::ggresiduals(teste)
-shapiro.test(teste$residuals)
-```
-
-* IMC categorizado
-
-```{r}
-teste <- lm(pressao_media ~ grupo + hipertensao + categoriaimc , data = df_reg_sem_out)
-teste %>% summary()
-reglin::ggresiduals(teste)
-shapiro.test(teste$residuals)
-```
-
-```{r}
-teste <- lm(pressao_media ~ grupo + hipertensao + imcbinario , data = df_reg_sem_out)
-teste %>% summary()
-reglin::ggresiduals(teste)
-shapiro.test(teste$residuals)
+modeloldl <- lm(ldl_dosado ~ grupo + idade + triglicerides, df_num)
+summary(modeloldl)
+shapiro.test(modeloldl$residuals)
+qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
+#reglin::ggresiduals(fit_final)
 ```
 
 # Outras Alterações
