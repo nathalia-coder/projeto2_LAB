@@ -27,6 +27,7 @@ library(readxl)
 library(patchwork) # para parcionar os graficos
 library(janitor)
 library(kableExtra)
+library(rlist) # para funcao de append.list
 # rode uma vez soh
 ```
 
@@ -898,166 +899,109 @@ qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
 #reglin::ggresiduals(fit_final)
 ```
 
-# Outras Alterações
+
+# Cálculo Amostral
+
+Optou-se por variar o $\beta$ no estudo (1 - $\beta$ indica o poder do teste). Testes mais poderosos implicam em maior rigor do tamanho amostral, espera-se aumento do tamanho da amostra quando avaliar isso. Vale lembrar que usualmente usa-se o poder de 90%.
 
 ```{r}
-escolaridade_bin<- ifelse(df_cat$escolaridade_bin == "superior", 1, 0)
-binarias<- c("grupo","medic_diabetes","medic_hipercol","tabagista","elitista",
-             "anti_hiper","hipertensao","diabetes","hipercolesterolemia","sangueo", "escolaridade_bin")
+df_calc_amostra_mean <- df_reg %>% 
+  group_by(grupo) %>% 
+  summarise(
+    media_PAS = mean(pressao_sis, na.rm = T),
+    media_PAD = mean(pressao_dias, na.rm = T),
+    media_PAM = mean(pressao_media, na.rm = T),
+    media_IMC = mean(imc, na.rm = T),
+    media_LDL = mean(ldl_dosado, na.rm = T),
+    )
 
-maisdeduascategorias<- c("etnia","escolaridade","num_gestacoes","categoriaimc")
-imc<- df_num$imc
-pressao_media<- df_num$pressao_media
-colesterol_total<- df_num$colesterol_total
+df_calc_amostra_var <- df_reg %>% 
+  group_by(grupo) %>% 
+  summarise(
+    var_PAS   = var(pressao_sis, na.rm = T),
+    var_PAD   = var(pressao_dias, na.rm = T),
+    var_PAM   = var(pressao_media, na.rm = T),
+    var_IMC   = var(imc, na.rm = T),
+    var_LDL   = var(ldl_dosado, na.rm = T)
+    )
+```
 
+```{r}
+var1 <- df_calc_amostra_var %>% filter(grupo == 0) %>% select(-grupo)
+var2 <- df_calc_amostra_var %>% filter(grupo == 1) %>% select(-grupo)
+alpha <- 0.05
+beta <- c(0.01,0.05,0.1)
+dif = abs(
+  df_calc_amostra_mean %>% filter(grupo == 0) %>% select(-grupo) - 
+  df_calc_amostra_mean %>% filter(grupo == 1) %>% select(-grupo)
+  ) # dif medias
 
-# Lista para armazenar os p-valores
-p_valores_imc <- numeric()
-p_valores_pressao_media <- numeric()
-p_valores_colesterol_total <- numeric()
+z2 <- qnorm(1 - alpha/2)
+zbeta <- qnorm(1 - beta)
 
-# Loop sobre as variáveis binárias
-for (var_binaria in binarias) {
-  grupo1_imc <- imc[df_cat[[var_binaria]] == 0]
-  grupo2_imc <- imc[df_cat[[var_binaria]] == 1]
-  
-  grupo1_pressao_media <- pressao_media[df_cat[[var_binaria]] == 0]
-  grupo2_pressao_media <- pressao_media[df_cat[[var_binaria]] == 1]
-  
-  grupo1_colesterol_total <- colesterol_total[df_cat[[var_binaria]] == 0]
-  grupo2_colesterol_total <- colesterol_total[df_cat[[var_binaria]] == 1]
-  
-  # Verificar se há dados suficientes para realizar o teste t para imc
-  if (length(grupo1_imc) >= 3 & length(grupo2_imc) >= 3) {
-    # Teste t de Student para imc
-    resultado_t_test_imc <- t.test(grupo1_imc, grupo2_imc)
-    
-    # Armazenar o p-valor
-    p_valores_imc <- c(p_valores_imc, resultado_t_test_imc$p.value)
-  } else {
-    p_valores_imc <- c(p_valores_imc, NA)
-  }
-  
-  # Verificar se há dados suficientes para realizar o teste t para pressao_media
-  if (length(grupo1_pressao_media) >= 3 & length(grupo2_pressao_media) >= 3) {
-    # Teste t de Student para pressao_media
-    resultado_t_test_pressao_media <- t.test(grupo1_pressao_media, grupo2_pressao_media)
-    
-    # Armazenar o p-valor
-    p_valores_pressao_media <- c(p_valores_pressao_media, resultado_t_test_pressao_media$p.value)
-  } else {
-    p_valores_pressao_media <- c(p_valores_pressao_media, NA)
-  }
-  
-  # Verificar se há dados suficientes para realizar o teste t para colesterol_total
-  if (length(grupo1_colesterol_total) >= 3 & length(grupo2_colesterol_total) >= 3) {
-    # Teste t de Student para colesterol_total
-    resultado_t_test_colesterol_total <- t.test(grupo1_colesterol_total, grupo2_colesterol_total)
-    
-    # Armazenar o p-valor
-    p_valores_colesterol_total <- c(p_valores_colesterol_total, resultado_t_test_colesterol_total$p.value)
-  } else {
-    p_valores_colesterol_total <- c(p_valores_colesterol_total, NA)
-  }
+#se o erro aumenta, o n diminui. peq erros maior n
+lista_n <- list()
+
+for (i in 1:ncol(var1)){
+  v1 = var1[[i]]; v2 = var2[[i]]; delta = dif[[i]]
+  n = ((v1 + v2) * (z2 + zbeta)^2) / (delta^2)
+  lista_n = list.append(
+    lista_n,
+    list(
+      "Poder" = paste0( (1-beta)*100,"%"),
+      "Tamanho por grupo" = n %>% round(),
+      "Tamanho Amostral Total" = 2*n %>% round()
+    )
+  )
+
 }
-
-# Criar um data frame com os p-valores
-resultados_p_valores <- data.frame(
-  Variavel = binarias, 
-  P_valor_IMC = p_valores_imc, 
-  P_valor_Pressao_Media = p_valores_pressao_media, 
-  P_valor_Colesterol_Total = p_valores_colesterol_total)
-
-# Visualizar os resultados
-resultados_p_valores %>% 
-  kbl(
-    digits = 3,
-    format.args = list(decimal.mark = ',', big.mark = ".") 
-    ) %>%
-  kable_paper(full_width = F) %>%
-  column_spec(1, bold = T)
 ```
 
-*  Mais de uma categoria
+Para o cálculo, considerou-se as variâncias por grupo e a diferença das médias por grupo, resumo abaixo:
 
 ```{r}
-maisdeduascategorias<- c("etnia","escolaridade","num_gestacoes","categoriaimc")
-
-df_cat$etnia<- as.factor(df_cat$etnia)
-df_cat$escolaridade<- as.factor(df_cat$escolaridade)
-df_cat$num_gestacoes<- as.factor(df_cat$num_gestacoes)
-df_cat$categoriaimc<- as.factor(df_cat$categoriaimc)
-
-# Lista para armazenar os resultados do teste de Kruskal-Wallis
-resultados_kw <- list()
-
-# Variáveis numéricas
-numericas <- c("imc", "pressao_media", "colesterol_total")
-
-# Loop sobre as variáveis numéricas
-for (numerica in numericas) {
-  # Vetores para armazenar os resultados
-  categorias <- maisdeduascategorias
-  p_valores <- numeric(length(categorias))
-  
-  # Loop sobre as variáveis categóricas com mais de duas categorias
-  for (i in seq_along(categorias)) {
-    # Verificar se há dados suficientes em cada grupo
-    if (all(table(df_cat[[categorias[i]]]) >= 3)) {
-      # Teste de Kruskal-Wallis
-      resultado_kw <- kruskal.test(df_num[[numerica]] ~ df_cat[[categorias[i]]])
-      
-      # Armazenar o p-valor
-      p_valores[i] <- resultado_kw$p.value
-    } else {
-      cat(sprintf("Não foi possível realizar o teste de Kruskal-Wallis para %s e %s devido à falta de dados.\n", numerica, categorias[i]))
-      p_valores[i] <- NA
-    }
-  }
-  
-  # Armazenar os resultados na lista
-  resultados_kw[[numerica]] <- data.frame(Categoria = categorias, P_Valor = p_valores %>% round(3))
-}
-
-# Exibir os resultados - original
-# for (numerica in numericas) {
-#   cat(sprintf("\n=== Resultados para %s ===\n", numerica))
-#   print(resultados_kw[[numerica]])
-# }
-```
-
-**Resultado para IMC:**
-
-```{r}
-# Exibir os resultados - para html
-resultados_kw[[1]] %>% 
-  kbl(
-    format.args = list(decimal.mark = ',', big.mark = ".") 
-    ) %>%
+kbl(
+  df_calc_amostra_var,
+  digits = 0,
+  format.args = list(decimal.mark = ',', big.mark = "."), 
+  caption = "Cálculo das variâncias por grupo"
+  ) %>%
   kable_paper(full_width = F) %>%
   column_spec(1, bold = T)
+
+kbl(
+  dif,
+  digits = 0,
+  format.args = list(decimal.mark = ',', big.mark = "."), 
+  caption = "Cálculo da diferença das médias por grupo"
+  ) %>%
+  kable_paper(full_width = F)
 ```
 
-**Resultado para pressao_media:**
+O Resultado obtido está abaixo:
 
 ```{r}
-# Exibir os resultados - para html
-resultados_kw[[2]] %>% 
-  kbl(
-    format.args = list(decimal.mark = ',', big.mark = ".") 
-    ) %>%
-  kable_paper(full_width = F) %>%
-  column_spec(1, bold = T)
+# ordem de cada calc amostral, 1 eh pas, 2 eh pad...
+variavel = c("PAS", "PAD", "PAM", "IMC", "LDL")
+
+lista_n[[1]] %>% as_tibble() %>% 
+  kable(caption = "Cálculo do tamanho amostral para PAS") %>%
+  kable_styling("striped", full_width = F)
+
+lista_n[[2]] %>% as_tibble() %>% 
+  kable(caption = "Cálculo do tamanho amostral para PAD") %>%
+  kable_styling("striped", full_width = F)
+
+lista_n[[3]] %>% as_tibble() %>% 
+  kable(caption = "Cálculo do tamanho amostral para PAM") %>%
+  kable_styling("striped", full_width = F)
+
+lista_n[[4]] %>% as_tibble() %>% 
+  kable(caption = "Cálculo do tamanho amostral para IMC") %>%
+  kable_styling("striped", full_width = F)
+
+lista_n[[5]] %>% as_tibble() %>% 
+  kable(caption = "Cálculo do tamanho amostral para LDL") %>%
+  kable_styling("striped", full_width = F)
 ```
 
-**Resultado para colesterol_total:**
-
-```{r}
-# Exibir os resultados - para html
-resultados_kw[[3]] %>% 
-  kbl(
-    format.args = list(decimal.mark = ',', big.mark = ".") 
-    ) %>%
-  kable_paper(full_width = F) %>%
-  column_spec(1, bold = T)
-```
