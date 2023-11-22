@@ -913,6 +913,7 @@ df_calc_amostra_mean <- df_reg %>%
     media_PAM = mean(pressao_media, na.rm = T),
     media_IMC = mean(imc, na.rm = T),
     media_LDL = mean(ldl_dosado, na.rm = T),
+    media_CIN = mean(cintura, na.rm = T)
     )
 
 df_calc_amostra_var <- df_reg %>% 
@@ -922,11 +923,11 @@ df_calc_amostra_var <- df_reg %>%
     var_PAD   = var(pressao_dias, na.rm = T),
     var_PAM   = var(pressao_media, na.rm = T),
     var_IMC   = var(imc, na.rm = T),
-    var_LDL   = var(ldl_dosado, na.rm = T)
+    var_LDL   = var(ldl_dosado, na.rm = T),
+    var_CIN   = var(cintura, na.rm = T)
     )
-```
 
-```{r}
+## Calculo
 var1 <- df_calc_amostra_var %>% filter(grupo == 0) %>% select(-grupo)
 var2 <- df_calc_amostra_var %>% filter(grupo == 1) %>% select(-grupo)
 alpha <- 0.05
@@ -982,7 +983,7 @@ O Resultado obtido está abaixo:
 
 ```{r}
 # ordem de cada calc amostral, 1 eh pas, 2 eh pad...
-variavel = c("PAS", "PAD", "PAM", "IMC", "LDL")
+variavel = c("PAS", "PAD", "PAM", "IMC", "LDL", "CINTURA")
 
 lista_n[[1]] %>% as_tibble() %>% 
   kable(caption = "Cálculo do tamanho amostral para PAS") %>%
@@ -1002,6 +1003,10 @@ lista_n[[4]] %>% as_tibble() %>%
 
 lista_n[[5]] %>% as_tibble() %>% 
   kable(caption = "Cálculo do tamanho amostral para LDL") %>%
+  kable_styling("striped", full_width = F)
+
+lista_n[[5]] %>% as_tibble() %>% 
+  kable(caption = "Cálculo do tamanho amostral para CINTURA") %>%
   kable_styling("striped", full_width = F)
 ```
 
