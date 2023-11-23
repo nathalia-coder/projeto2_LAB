@@ -619,9 +619,9 @@ tema = theme_minimal() +
 theme_set(tema)
 ```
 
-## Resumo testes de hipóteses
+# Resumo testes de hipóteses
 
-### Dados numéricos
+## Dados numéricos
 
 Para os dados numéricos, os testes tiveram por hipótese geral:
 
@@ -686,7 +686,7 @@ kbl(
   collapse_rows(columns = c(1,13:14))
 ```
 
-### Dados categóricos
+## Dados categóricos
 
 ```{r}
 # Teste de hipóteses para dados categóricos
@@ -993,21 +993,32 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modeloldl)
 ```
 
+## Trombomodulina (creatinina poderia entrar se fosse importante)
+
+```{r}
+modelotromb <- lm(trombomodulina ~ grupo + escolaridade_bin, data = df_reg)
+summary(modelotromb)
+shapiro.test(modelotromb$residuals)
+#reglin::ggresiduals(modelotromb)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modelotromb)
+```
+
 ## ADMA
 
 ### Modelo Normal para ADMA
 
-- Tiramos 1 observação influente:
+- Tiramos 1 observação influente, resultou em melhoria do $R^2_{Ajustado}$ e nas estimativas dos coeficientes (Maior mudança: Intercepto saiu de 204 para 101; idade de -5,7 para -2,5)
 
 ```{r}
 modeloadma <- lm(adma ~ idade + ldl_dosado, df_reg[-c(5),])
 summary(modeloadma)
-shapiro.test(modeloldl$residuals)
+shapiro.test(modeloadma$residuals)
 
 reglin::ggresiduals(modeloadma)
 #outlierTest(modeloadma) # ha pontos influentes
 print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modeloldl)
+durbinWatsonTest(modeloadma)
 ```
 
 - Tiramos 2 observações influentes e a regressão deixa de ser significativa (inclusive sem ldl):
@@ -1082,10 +1093,21 @@ plot(
 df_adma <- df_adma %>% filter(adma < 200)
 ```
 
+- Abaixo vemos como retirar esses casos extremos contribuiram para a melhoria de algumas estimativas iniciais, **o desvio padrão do grupo MP reduziu de 167 para 38**
+
 - Após a retirada os dados continuaram balenceados por grupo;
 
 ```{r}
-df_adma$grupo %>% table()
+kbl(
+  rbind(
+    realizar_teste(df_num %>% rename(adma_antes = adma), "adma_antes"),
+    realizar_teste(df_adma %>% rename(adma_depois = adma), "adma_depois")
+  ),
+  digits = 3,
+  format.args = list(decimal.mark = ',', big.mark = ".") 
+  ) %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
 ```
 
 **Principais mudanças:** 
@@ -1129,15 +1151,32 @@ ConcluiAjuste(M3)
 #plot(M3$fitted.values, residuals(M3, type = "pearson"))
 ```
 
-## Trombomodulina (creatinina poderia entrar se fosse importante)
+#### Mesma ideia para Normal
+
+- O que era significativo no modelo inicial, passa a ser não significativo;
+- Melhor interpretação que o MLG;
+- Conclusão similar a todos demais;
+- Melhorou resíduos;
+- Regressão significativa;
 
 ```{r}
-modelotromb <- lm(trombomodulina ~ grupo + escolaridade_bin, data = df_reg)
-summary(modelotromb)
-shapiro.test(modelotromb$residuals)
-#reglin::ggresiduals(modelotromb)
+modeloadma3 <- lm(adma ~ grupo + categoriaimc + escolaridade, df_adma)
+summary(modeloadma3)
+shapiro.test(modeloadma3$residuals)
+
+reglin::ggresiduals(modeloadma3)
+#outlierTest(modeloadma3) # ha pontos influentes
 print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modelotromb)
+durbinWatsonTest(modeloadma3)
+```
+
+- Transformação na resposta, log(adma) normaliza resíduos
+- R2ajustado pouco penalizado
+
+```{r}
+modeloadma4 <- lm(log(adma) ~ grupo + categoriaimc + escolaridade, df_adma)
+modeloadma4 %>% summary()
+shapiro.test(modeloadma4$residuals)
 ```
 
 # Regressões Logísticas
