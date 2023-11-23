@@ -30,6 +30,7 @@ library(kableExtra)
 library(hnp)
 library(gtsummary)
 library(rlist)
+library(car)
 # rode uma vez soh
 ```
 
@@ -600,7 +601,6 @@ df_num <- df_completo %>% select(all_of(num))
 df_cat <- df_completo %>% select(all_of(cat))
 ```
 
-
 ```{r tema_graficos}
 cor_verde = c("#4fb6a7")
 cor_roxa = c("#652177")
@@ -635,8 +635,6 @@ Para os dados numéricos, os testes tiveram por hipótese geral:
         }    \nonumber
     \end{eqnarray}
 ```
-
-
 ```{r funcao_teste_hipotese}
 realizar_teste <- function(dataframe, variavel) {
   
@@ -665,7 +663,6 @@ realizar_teste <- function(dataframe, variavel) {
   return(tabela)
 }
 ```
-
 
 ```{r aplicando_teste_numericos}
 ### Idade:
@@ -715,7 +712,6 @@ hipo_categorica <- function(dados, grupo, variavel){
   }
 ```
 
-
 ```{r aplicando_teste_categoricos}
 ### Etnia:
 variavel <- "etnia"
@@ -743,7 +739,7 @@ kbl(
 
 # Outras Informações
 
-* Descritiva ADMA e trombomodulina
+-   Descritiva ADMA e trombomodulina
 
 ```{r}
 # Gráfico de histograma
@@ -789,7 +785,7 @@ g4 <- ggplot(df3, aes(y = trombomodulina)) +
 g3 + g4
 ```
 
-* Sobre Hipertensão e Usar anti hipertensivos
+-   Sobre Hipertensão e Usar anti hipertensivos
 
 ```{r}
 Hipertensao <- df_completo$hipertensao  %>% as.factor(); AntiHiper <- df_completo$anti_hiper %>% as.factor()
@@ -797,7 +793,7 @@ tab <- xtabs(~  Hipertensao + AntiHiper)
 tab
 ```
 
-* Comparação grupos em relação a hipertensão e uso de anti hipertensivos
+-   Comparação grupos em relação a hipertensão e uso de anti hipertensivos
 
 ```{r}
 manti_hiper<- df_completo %>% select(grupo, anti_hiper)
@@ -807,7 +803,7 @@ mhiper<- df_completo %>% select(grupo, hipertensao)
 table(mhiper)
 ```
 
-* Correlações:
+-   Correlações:
 
 ```{r}
 data <- df_num %>% drop_na() %>% select(-grupo)
@@ -829,7 +825,7 @@ corrplot::corrplot(cor(data_sig_sem_corr),
                    )
 ```
 
-# Regressões lineares 
+# Regressões lineares
 
 ```{r covariaveis_regressao}
 df_reg <- df_completo %>% 
@@ -840,15 +836,31 @@ df_reg <- df_completo %>%
     imc, adma, lym, filtr_glomerular, rbc, wbc, hdl, triglicerides, colesterol_total, anti_hipercolesterolemia, anti_diabetes, paalto, cinturaaumentada, tgalto, hdlbaixo,
     # categoricas
     hipertensao, gpsanguineo, escolaridade_bin, categoriaimc, imcbinario, anti_hiper, sangueo, escolaridade
-    )
+    ) %>% as_tibble()
+
+#df_reg %>% glimpse()
+# transformando as categoricas
+df_reg <- df_reg %>% mutate(
+  anti_hipercolesterolemia = as.factor(anti_hipercolesterolemia),
+  anti_diabetes = as.factor(anti_diabetes),
+  paalto = as.factor(paalto),
+  cinturaaumentada = as.factor(cinturaaumentada),
+  tgalto = as.factor(tgalto),
+  hdlbaixo = as.factor(hdlbaixo),
+  hipertensao = as.factor(hipertensao),
+  anti_hiper = as.factor(anti_hiper)
+)
+levels(df_reg$escolaridade) <- c( "4serie","fundamental","medio","tecnico","superior","posgrad")
 ```
 
 ```{r funcao_resumo_ajuste}
 ConcluiAjuste <- function(fit){
   tabela <- cbind(
-    Variavel = names(coef(fit))[-1],
-    Efeito = paste0(100 * (exp( coef(fit)[-1]) - 1) %>% round(4),"%")
+    Variavel = names(coef(fit)),
+    Efeito = paste0(100 * (exp( coef(fit)) - 1) %>% round(4),"%")
     ) %>% as_tibble()
+  
+  tabela[1,2] = "-" # considerando o grupo base
   
   kbl(tabela) %>%
   kable_paper(full_width = F) %>%
@@ -857,61 +869,152 @@ ConcluiAjuste <- function(fit){
 ```
 
 ### PAS
- 
+
+-   **M1**: Modelo sem escolaridade
+
 ```{r}
 modelopas <- lm(pressao_sis ~ grupo + idade + anti_hiper + imc, data = df_reg)
 modelopas %>% summary()
-##reglin::ggresiduals(teste)
+##reglin::ggresiduals(modelopas)
 shapiro.test(modelopas$residuals)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modelopas)
+```
+
+-   **M2**: Modelo com escolaridade sendo significativa
+
+```{r}
+modelopas2 <- lm(pressao_sis ~ grupo + idade + anti_hiper + imc + escolaridade, data = df_reg)
+modelopas2 %>% summary()
+##reglin::ggresiduals(modelopas2)
+shapiro.test(modelopas2$residuals)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modelopas2)
+```
+
+-   Comparação **M1** e **M2**:
+
+Indica pelo menos um nível de escolaridade significativo.
+
+```{r}
+anova(modelopas, modelopas2)
 ```
 
 ### PAD
 
+-   **M1**: Modelo sem escolaridade
+
 ```{r}
 modelopad <- lm(pressao_dias ~ grupo + anti_hiper + imc + idade, data = df_reg)
 modelopad %>% summary()
-#reglin::ggresiduals(teste)
+##reglin::ggresiduals(modelopad)
 shapiro.test(modelopad$residuals)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modelopad)
+```
+
+-   **M2**: Modelo com escolaridade sendo significativa
+
+```{r}
+modelopad2 <- lm(pressao_dias ~ grupo + anti_hiper + imc + idade + escolaridade, data = df_reg)
+modelopad2 %>% summary()
+##reglin::ggresiduals(modelopad2)
+shapiro.test(modelopad2$residuals)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modelopad2)
+```
+
+-   Comparação **M1** e **M2**:
+
+Indica pelo menos um nível de escolaridade significativo.
+
+```{r}
+anova(modelopad, modelopad2)
 ```
 
 ### PAM
 
+-   **M1**: Modelo sem escolaridade
+
 ```{r}
 modelopam <- lm(pressao_media ~ grupo + anti_hiper + imc + idade, data = df_reg)
 modelopam %>% summary()
-#reglin::ggresiduals(teste)
+#reglin::ggresiduals(modelopam)
 shapiro.test(modelopam$residuals)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modelopam)
+```
+
+-   **M2**: Modelo com escolaridade sendo significativa
+```{r}
+modelopam2 <- lm(pressao_media ~ grupo + anti_hiper + imc + idade + escolaridade, data = df_reg)
+modelopam2 %>% summary()
+#reglin::ggresiduals(modelopam2)
+shapiro.test(modelopam2$residuals)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modelopam2)
+```
+
+-   Comparação **M1** e **M2**:
+
+Indica pelo menos um nível de escolaridade significativo.
+
+```{r}
+anova(modelopam, modelopam2)
 ```
 
 ### IMC
 
 ```{r}
 modeloimc <- lm(imc ~ grupo + pressao_media + triglicerides, df_reg)
+#outlierTest(modeloimc) # uma observacao influente, tira-la
+#shapiro.test(modeloimc$residuals) # essa observacao fura normalidade
+
+modeloimc <- lm(imc ~ grupo + pressao_media + triglicerides, df_reg[-188,])
+#outlierTest(modeloimc) # mais observacao influente, mas nao vamos tira-la pq tem normalidade
+
 summary(modeloimc)
 shapiro.test(modeloimc$residuals)
-qqnorm(modeloimc$residuals); qqline(modeloimc$residuals)
-ConcluiAjuste(modeloimc)
-#reglin::ggresiduals(fit_final)
+#reglin::ggresiduals(modeloimc)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modeloimc)
 ```
 
-### LDL pq deixamos triglicerides?
+### LDL
 
 ```{r}
-modeloldl <- lm(ldl_dosado ~ grupo + idade + triglicerides, df_num)
+modeloldl <- lm(ldl_dosado ~ grupo + idade, df_reg)
 summary(modeloldl)
 shapiro.test(modeloldl$residuals)
 qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
-#reglin::ggresiduals(fit_final)
+#reglin::ggresiduals(modeloldl)
+#outlierTest(modeloldl) # ha pontos influentes, mas nao ajudam na normalidade, precisa de muitos e piora o r2
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modeloldl)
 ```
 
-### ADMA 
+### ADMA
+
+- Tiramos 1 observação influente:
 
 ```{r}
-modeloadma <- lm(adma ~ idade + ldl_dosado, df_reg)
+modeloadma <- lm(adma ~ idade + ldl_dosado, df_reg[-c(5),])
 summary(modeloadma)
 shapiro.test(modeloldl$residuals)
-qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
-#reglin::ggresiduals(fit_final)
+
+reglin::ggresiduals(modeloadma)
+#outlierTest(modeloadma) # ha pontos influentes
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modeloldl)
+```
+
+- Tiramos 2 observações influentes e a regressão deixa de ser significativa (inclusive sem ldl):
+
+Isso gera mais influentes, tirando-os, continua não significativa.
+
+```{r}
+modeloadma2 <- lm(adma ~ idade + ldl_dosado, df_reg[-c(5,71),])
+summary(modeloadma2)
 ```
 
 ### Trombomodulina (creatinina poderia entrar se fosse importante)
@@ -919,82 +1022,91 @@ qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
 ```{r}
 modelotromb <- lm(trombomodulina ~ grupo + escolaridade_bin, data = df_reg)
 summary(modelotromb)
-shapiro.test(modeloldl$residuals)
-qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
-#reglin::ggresiduals(fit_final)
+shapiro.test(modelotromb$residuals)
+#reglin::ggresiduals(modelotromb)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modelotromb)
 ```
-
 
 # Regressões Logísticas
 
 ### Anti Hipercolesterolemia (não faz sentido colocar colesterol total, faz? Anti hipertensivo muito estranho na tabela)
 
-```{r echo=FALSE}
+```{r}
 modeloantihipercol <- glm(anti_hipercolesterolemia ~ anti_hiper + idade, data = df_reg, family = "binomial"(link = 'logit'))
 summary(modeloantihipercol)
-car::vif(modeloantihipercol)
+#vif(modeloantihipercol)
 hnp(modeloantihipercol)
 tbl_regression(modeloantihipercol, exponentiate = TRUE)
+ConcluiAjuste(modeloantihipercol)
 ```
 
 ### Remédio Diabetes (nada deu significativo)
 
-```{r echo=FALSE}
+```{r}
 modelodiabetes<- glm(anti_diabetes ~ imc + anti_hiper, data = df_reg, family = "binomial"(link = 'logit'))
 summary(modelodiabetes)
-car::vif(modelodiabetes)
+#vif(modelodiabetes)
 hnp(modelodiabetes)
 tbl_regression(modelodiabetes, exponentiate = TRUE)
+ConcluiAjuste(modelodiabetes)
 ```
 
 ### PA > 130/85 e/ou uso de anti-hipertensivo
 
-```{r echo=FALSE}
-modelopa<- glm(paalto ~ grupo + idade + imc, data = df_reg, family = "binomial"(link = 'logit'))
+```{r}
+modelopa <- glm(paalto ~ grupo + idade + imc, data = df_reg, family = "binomial"(link = 'logit'))
 summary(modelopa)
-car::vif(modelopa)
-hnp(modelopa)
+vif(modelopa)
+#hnp(modelopa)
 tbl_regression(modelopa, exponentiate = TRUE)
+ConcluiAjuste(modelopa)
 ```
 
-### Cintura > 88cm (quando entra o grupo não é significativo, mas é 0,09)
+### Cintura \> 88cm (quando entra o grupo não é significativo, mas é 0,09)
 
-```{r echo=FALSE}
+```{r}
 modelocintura<- glm(cinturaaumentada ~ pressao_media + triglicerides, data = df_reg, family = "binomial"(link = 'logit'))
 summary(modelocintura)
-car::vif(modelocintura)
+#vif(modelocintura)
 hnp(modelocintura)
 tbl_regression(modelocintura, exponentiate = TRUE)
+ConcluiAjuste(modelocintura)
 ```
 
-### TG > 150 mg/dL (com creatinina)
+### TG \> 150 mg/dL (com creatinina)
 
-```{r echo=FALSE}
-modelotg <- glm(tgalto ~ creatinina + imc + colesterol_total, data = df_reg, family = "binomial"(link = 'logit'))
+```{r}
+modelotg <- glm(tgalto ~ grupo + creatinina + imc + colesterol_total, data = df_reg, family = "binomial"(link = 'logit'))
 summary(modelotg)
-car::vif(modelotg)
+#vif(modelotg)
 hnp(modelotg)
 tbl_regression(modelotg, exponentiate = TRUE)
+ConcluiAjuste(modelotg)
 ```
 
-### TG > 150 mg/dL (sem creatinina)
+### TG \> 150 mg/dL (sem creatinina)
 
-```{r echo=FALSE}
+* Grupo deu não significativo
+
+```{r}
 modelotg <- glm(tgalto ~ imc + colesterol_total, data = df_reg, family = "binomial"(link = 'logit'))
 summary(modelotg)
-car::vif(modelotg)
+#vif(modelotg)
 hnp(modelotg)
 tbl_regression(modelotg, exponentiate = TRUE)
+ConcluiAjuste(modelotg)
 ```
 
-### HDL < 50
+### HDL \< 50
 
-```{r echo=FALSE}
+```{r}
 modelohdl <- glm(hdlbaixo ~ imc + triglicerides, data = df_reg, family = "binomial"(link = 'logit'))
 summary(modelohdl)
-car::vif(modelohdl)
+#vif(modelohdl)
 hnp(modelohdl)
 tbl_regression(modelohdl, exponentiate = TRUE)
+ConcluiAjuste(modelohdl)
 ```
 
 # Cálculo Amostral
@@ -1106,4 +1218,3 @@ lista_n[[5]] %>% as_tibble() %>%
   kable(caption = "Cálculo do tamanho amostral para CINTURA") %>%
   kable_styling("striped", full_width = F)
 ```
-
