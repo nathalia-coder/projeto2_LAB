@@ -5,7 +5,7 @@
 output:
   bookdown::html_document2:
     new_session: true
-    number_sections: false
+    number_sections: true
     fig_caption: true
 #header-includes: \usepackage[brazil]{babel}
 editor_options:
@@ -868,7 +868,7 @@ ConcluiAjuste <- function(fit){
 }
 ```
 
-### PAS
+## PAS
 
 -   **M1**: Modelo sem escolaridade
 
@@ -900,7 +900,7 @@ Indica pelo menos um nível de escolaridade significativo.
 anova(modelopas, modelopas2)
 ```
 
-### PAD
+## PAD
 
 -   **M1**: Modelo sem escolaridade
 
@@ -932,7 +932,7 @@ Indica pelo menos um nível de escolaridade significativo.
 anova(modelopad, modelopad2)
 ```
 
-### PAM
+## PAM
 
 -   **M1**: Modelo sem escolaridade
 
@@ -963,7 +963,7 @@ Indica pelo menos um nível de escolaridade significativo.
 anova(modelopam, modelopam2)
 ```
 
-### IMC
+## IMC
 
 ```{r}
 modeloimc <- lm(imc ~ grupo + pressao_media + triglicerides, df_reg)
@@ -980,7 +980,7 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modeloimc)
 ```
 
-### LDL
+## LDL
 
 ```{r}
 modeloldl <- lm(ldl_dosado ~ grupo + idade, df_reg)
@@ -993,7 +993,9 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modeloldl)
 ```
 
-### ADMA
+## ADMA
+
+### Modelo Normal para ADMA
 
 - Tiramos 1 observação influente:
 
@@ -1017,7 +1019,117 @@ modeloadma2 <- lm(adma ~ idade + ldl_dosado, df_reg[-c(5,71),])
 summary(modeloadma2)
 ```
 
-### Trombomodulina (creatinina poderia entrar se fosse importante)
+### Modelo MLG para ADMA
+
+- O gráfico de ADMA indicou que assume valores maiores que zero e com cauda longa;
+
+```{r}
+df_adma = df_reg %>% drop_na(adma)
+
+plot(
+  density(df_adma$adma), 
+  main="Densidade de ADMA completo", lwd=3
+  )
+```
+
+#### Adma modelo Gama com todas informações
+
+```{r}
+M3 = glm(adma ~ grupo, family=Gamma(link="log"), data = df_reg)
+summary(M3)
+tbl_regression(M3, exponentiate = TRUE)
+ConcluiAjuste(M3)
+#plot(M3$fitted.values, residuals(M3, type = "pearson"))
+```
+
+```{r}
+M3 = glm(adma ~ grupo + idade + ldl_dosado, family=Gamma(link="log"), data = df_reg)
+summary(M3)
+tbl_regression(M3, exponentiate = TRUE)
+ConcluiAjuste(M3)
+#plot(M3$fitted.values, residuals(M3, type = "pearson"))
+```
+
+```{r}
+M3 = glm(adma ~ idade + ldl_dosado, family=Gamma(link="log"), data = df_reg)
+summary(M3)
+tbl_regression(M3, exponentiate = TRUE)
+ConcluiAjuste(M3)
+#plot(M3$fitted.values, residuals(M3, type = "pearson"))
+```
+
+- Exemplo de resíduos ruins
+
+```{r}
+M3 = glm(adma ~ grupo + ldl_dosado, family=Gamma(link="log"), data = df_reg)
+summary(M3)
+tbl_regression(M3, exponentiate = TRUE)
+ConcluiAjuste(M3)
+hnp(M3)
+plot(M3$fitted.values, residuals(M3, type = "pearson"))
+```
+
+#### Adma modelo Gama sem algumas informações
+
+- Há 4 valores maiores que 200, todos do grupo 1 (com eclâmpsia);
+
+```{r}
+plot(
+  density(df_adma$adma[df_adma$adma < 200]), 
+  main="Densidade de ADMA sem adma > 200", lwd=3
+  )
+
+df_adma <- df_adma %>% filter(adma < 200)
+```
+
+- Após a retirada os dados continuaram balenceados por grupo;
+
+```{r}
+df_adma$grupo %>% table()
+```
+
+**Principais mudanças:** 
+
+- Um modelo com *idade e ldl_dosado* ou com *grupo e ldl_dosado* ou com todos juntos já não é mais significativo
+- Melhora-se os resíduos
+
+```{r}
+M3 = glm(adma ~ grupo + cintura, family=Gamma(link="log"), data = df_adma)
+summary(M3)
+tbl_regression(M3, exponentiate = TRUE)
+ConcluiAjuste(M3)
+hnp(M3)
+plot(M3$fitted.values, residuals(M3, type = "pearson"))
+```
+
+```{r}
+M3 = glm(adma ~ grupo + categoriaimc, family=Gamma(link="log"), data = df_adma)
+summary(M3)
+tbl_regression(M3, exponentiate = TRUE)
+ConcluiAjuste(M3)
+#hnp(M3)
+#plot(M3$fitted.values, residuals(M3, type = "pearson"))
+```
+
+```{r}
+M3 = glm(adma ~ categoriaimc + escolaridade, family=Gamma(link="log"), data = df_adma)
+summary(M3)
+tbl_regression(M3, exponentiate = TRUE)
+ConcluiAjuste(M3)
+#hnp(M3)
+#plot(M3$fitted.values, residuals(M3, type = "pearson"))
+```
+
+```{r}
+M3 = glm(adma ~ cintura + escolaridade, family=Gamma(link="log"), data = df_adma)
+summary(M3)
+tbl_regression(M3, exponentiate = TRUE)
+ConcluiAjuste(M3)
+#hnp(M3)
+#plot(M3$fitted.values, residuals(M3, type = "pearson"))
+```
+
+## Trombomodulina (creatinina poderia entrar se fosse importante)
 
 ```{r}
 modelotromb <- lm(trombomodulina ~ grupo + escolaridade_bin, data = df_reg)
@@ -1030,7 +1142,7 @@ durbinWatsonTest(modelotromb)
 
 # Regressões Logísticas
 
-### Anti Hipercolesterolemia (não faz sentido colocar colesterol total, faz? Anti hipertensivo muito estranho na tabela)
+## Anti Hipercolesterolemia (não faz sentido colocar colesterol total, faz? Anti hipertensivo muito estranho na tabela)
 
 ```{r}
 modeloantihipercol <- glm(anti_hipercolesterolemia ~ anti_hiper + idade, data = df_reg, family = "binomial"(link = 'logit'))
@@ -1041,7 +1153,7 @@ tbl_regression(modeloantihipercol, exponentiate = TRUE)
 ConcluiAjuste(modeloantihipercol)
 ```
 
-### Remédio Diabetes (nada deu significativo)
+## Remédio Diabetes (nada deu significativo)
 
 ```{r}
 modelodiabetes<- glm(anti_diabetes ~ imc + anti_hiper, data = df_reg, family = "binomial"(link = 'logit'))
@@ -1052,7 +1164,7 @@ tbl_regression(modelodiabetes, exponentiate = TRUE)
 ConcluiAjuste(modelodiabetes)
 ```
 
-### PA > 130/85 e/ou uso de anti-hipertensivo
+## PA > 130/85 e/ou uso de anti-hipertensivo
 
 ```{r}
 modelopa <- glm(paalto ~ grupo + idade + imc, data = df_reg, family = "binomial"(link = 'logit'))
@@ -1063,7 +1175,7 @@ tbl_regression(modelopa, exponentiate = TRUE)
 ConcluiAjuste(modelopa)
 ```
 
-### Cintura \> 88cm (quando entra o grupo não é significativo, mas é 0,09)
+## Cintura \> 88cm (quando entra o grupo não é significativo, mas é 0,09)
 
 ```{r}
 modelocintura<- glm(cinturaaumentada ~ pressao_media + triglicerides, data = df_reg, family = "binomial"(link = 'logit'))
@@ -1074,7 +1186,7 @@ tbl_regression(modelocintura, exponentiate = TRUE)
 ConcluiAjuste(modelocintura)
 ```
 
-### TG \> 150 mg/dL (com creatinina)
+## TG \> 150 mg/dL (com creatinina)
 
 ```{r}
 modelotg <- glm(tgalto ~ grupo + creatinina + imc + colesterol_total, data = df_reg, family = "binomial"(link = 'logit'))
@@ -1085,7 +1197,7 @@ tbl_regression(modelotg, exponentiate = TRUE)
 ConcluiAjuste(modelotg)
 ```
 
-### TG \> 150 mg/dL (sem creatinina)
+## TG \> 150 mg/dL (sem creatinina)
 
 * Grupo deu não significativo
 
@@ -1098,7 +1210,7 @@ tbl_regression(modelotg, exponentiate = TRUE)
 ConcluiAjuste(modelotg)
 ```
 
-### HDL \< 50
+## HDL \< 50
 
 ```{r}
 modelohdl <- glm(hdlbaixo ~ imc + triglicerides, data = df_reg, family = "binomial"(link = 'logit'))
