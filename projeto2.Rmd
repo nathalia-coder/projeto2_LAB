@@ -27,7 +27,9 @@ library(readxl)
 library(patchwork) # para parcionar os graficos
 library(janitor)
 library(kableExtra)
-library(rlist) # para funcao de append.list
+library(hnp)
+library(gtsummary)
+library(rlist)
 # rode uma vez soh
 ```
 
@@ -517,10 +519,10 @@ renomear_colunas <- c(
  "grupo", 
  "anti_hipercolesterolemia",
  "anti_diabetes",
- "pa",
- "cintura",
- "tg",
- "hdl"
+ "paalto",
+ "cinturaaumentada",
+ "tgalto",
+ "hdlbaixo"
 )
 
 df7 <- df7 %>% dplyr::select(all_of(colunas_interesse))
@@ -529,13 +531,14 @@ colnames(df7) <- renomear_colunas
 
 df7 <- df7 %>% drop_na(grupo) %>% 
   mutate(
-  pa = coluna_numerica(pa),
-  cintura = coluna_numerica(cintura),
-  tg = coluna_numerica(tg),
-  hdl = coluna_numerica(hdl)
+  paalto = coluna_numerica(paalto),
+  cinturaaumentada = coluna_numerica(cinturaaumentada),
+  tgalto = coluna_numerica(tgalto),
+  hdlbaixo = coluna_numerica(hdlbaixo)
 )
 
 df7[] <- lapply(df7, as.numeric)
+df7 <- df7[, !(names(df7) %in% c("grupo"))]
 ```
 
 ```{r resumo_df}
@@ -563,7 +566,7 @@ df_completo <- left_join(df1 %>% select(-ck),
                          by = join_by(iniciais, grupo), relationship = "many-to-many") %>%
                left_join(., 
                          df5 %>% select(iniciais,grupo,hipertensao,diabetes,hipercolesterolemia),
-                         by = join_by(iniciais, grupo), relationship = "many-to-many") %>% 
+                         by = join_by(iniciais, grupo), relationship = "many-to-many") %>%
   select(- iniciais) %>% 
   # Inserindo variaveis
   mutate(
@@ -577,6 +580,8 @@ df_completo <- left_join(df1 %>% select(-ck),
     escolaridade_bin = ifelse(escolaridade %in% c(3, 4), "superior", "basico") %>% as.factor(),
     imcbinario = ifelse(imc < 24.99, "normal", "alterado") %>% as.factor()
 )
+
+df_completo <- cbind(df_completo, df7)
 
 df_completo$hipertensao <- ifelse(df_completo$hipertensao == 0 & df_completo$anti_hiper == 1, 1, df_completo$hipertensao)
 
@@ -832,7 +837,7 @@ df_reg <- df_completo %>%
     grupo,
     # numericas
     idade, cintura, razaoldl, ldl_dosado, pressao_media, pressao_dias, pressao_sis, creatinina, trombomodulina,
-    imc, adma, lym, filtr_glomerular, rbc, wbc, hdl, triglicerides, colesterol_total,
+    imc, adma, lym, filtr_glomerular, rbc, wbc, hdl, triglicerides, colesterol_total, anti_hipercolesterolemia, anti_diabetes, paalto, cinturaaumentada, tgalto, hdlbaixo,
     # categoricas
     hipertensao, gpsanguineo, escolaridade_bin, categoriaimc, imcbinario, anti_hiper, sangueo, escolaridade
     )
@@ -851,7 +856,7 @@ ConcluiAjuste <- function(fit){
 }
 ```
 
-### PAS adicionei idade
+### PAS
  
 ```{r}
 modelopas <- lm(pressao_sis ~ grupo + idade + anti_hiper + imc, data = df_reg)
@@ -860,7 +865,7 @@ modelopas %>% summary()
 shapiro.test(modelopas$residuals)
 ```
 
-### PAD adicionei idade
+### PAD
 
 ```{r}
 modelopad <- lm(pressao_dias ~ grupo + anti_hiper + imc + idade, data = df_reg)
@@ -869,7 +874,7 @@ modelopad %>% summary()
 shapiro.test(modelopad$residuals)
 ```
 
-### PAM adicionei idade
+### PAM
 
 ```{r}
 modelopam <- lm(pressao_media ~ grupo + anti_hiper + imc + idade, data = df_reg)
@@ -899,6 +904,98 @@ qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
 #reglin::ggresiduals(fit_final)
 ```
 
+### ADMA 
+
+```{r}
+modeloadma <- lm(adma ~ idade + ldl_dosado, df_reg)
+summary(modeloadma)
+shapiro.test(modeloldl$residuals)
+qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
+#reglin::ggresiduals(fit_final)
+```
+
+### Trombomodulina (creatinina poderia entrar se fosse importante)
+
+```{r}
+modelotromb <- lm(trombomodulina ~ grupo + escolaridade_bin, data = df_reg)
+summary(modelotromb)
+shapiro.test(modeloldl$residuals)
+qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
+#reglin::ggresiduals(fit_final)
+```
+
+
+# Regressões Logísticas
+
+### Anti Hipercolesterolemia (não faz sentido colocar colesterol total, faz? Anti hipertensivo muito estranho na tabela)
+
+```{r echo=FALSE}
+modeloantihipercol <- glm(anti_hipercolesterolemia ~ anti_hiper + idade, data = df_reg, family = "binomial"(link = 'logit'))
+summary(modeloantihipercol)
+car::vif(modeloantihipercol)
+hnp(modeloantihipercol)
+tbl_regression(modeloantihipercol, exponentiate = TRUE)
+```
+
+### Remédio Diabetes (nada deu significativo)
+
+```{r echo=FALSE}
+modelodiabetes<- glm(anti_diabetes ~ imc + anti_hiper, data = df_reg, family = "binomial"(link = 'logit'))
+summary(modelodiabetes)
+car::vif(modelodiabetes)
+hnp(modelodiabetes)
+tbl_regression(modelodiabetes, exponentiate = TRUE)
+```
+
+### PA > 130/85 e/ou uso de anti-hipertensivo
+
+```{r echo=FALSE}
+modelopa<- glm(paalto ~ grupo + idade + imc, data = df_reg, family = "binomial"(link = 'logit'))
+summary(modelopa)
+car::vif(modelopa)
+hnp(modelopa)
+tbl_regression(modelopa, exponentiate = TRUE)
+```
+
+### Cintura > 88cm (quando entra o grupo não é significativo, mas é 0,09)
+
+```{r echo=FALSE}
+modelocintura<- glm(cinturaaumentada ~ pressao_media + triglicerides, data = df_reg, family = "binomial"(link = 'logit'))
+summary(modelocintura)
+car::vif(modelocintura)
+hnp(modelocintura)
+tbl_regression(modelocintura, exponentiate = TRUE)
+```
+
+### TG > 150 mg/dL (com creatinina)
+
+```{r echo=FALSE}
+modelotg <- glm(tgalto ~ creatinina + imc + colesterol_total, data = df_reg, family = "binomial"(link = 'logit'))
+summary(modelotg)
+car::vif(modelotg)
+hnp(modelotg)
+tbl_regression(modelotg, exponentiate = TRUE)
+```
+
+### TG > 150 mg/dL (sem creatinina)
+
+```{r echo=FALSE}
+modelotg <- glm(tgalto ~ imc + colesterol_total, data = df_reg, family = "binomial"(link = 'logit'))
+summary(modelotg)
+car::vif(modelotg)
+hnp(modelotg)
+tbl_regression(modelotg, exponentiate = TRUE)
+```
+
+### HDL < 50
+
+```{r echo=FALSE}
+modelohdl <- glm(hdlbaixo ~ imc + triglicerides, data = df_reg, family = "binomial"(link = 'logit'))
+summary(modelohdl)
+car::vif(modelohdl)
+hnp(modelohdl)
+tbl_regression(modelohdl, exponentiate = TRUE)
+```
 
 # Cálculo Amostral
 
