@@ -892,6 +892,19 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modelopas2)
 ```
 
+```{r}
+
+levels(df_reg$escolaridade)
+
+modelopas2 <- lm(pressao_sis ~ grupo + idade + anti_hiper + imc + escolaridade, data = df_reg)
+modelopas2 %>% summary()
+##reglin::ggresiduals(modelopas2)
+shapiro.test(modelopas2$residuals)
+print("Durbin-Watson Test for Autocorrelated Errors")
+durbinWatsonTest(modelopas2)
+```
+
+
 -   Comparação **M1** e **M2**:
 
 Indica pelo menos um nível de escolaridade significativo.
@@ -1030,8 +1043,6 @@ modeloadma2 <- lm(adma ~ idade + ldl_dosado, df_reg[-c(5,71),])
 summary(modeloadma2)
 ```
 
-### Modelo MLG para ADMA
-
 - O gráfico de ADMA indicou que assume valores maiores que zero e com cauda longa;
 
 ```{r}
@@ -1042,45 +1053,6 @@ plot(
   main="Densidade de ADMA completo", lwd=3
   )
 ```
-
-#### Adma modelo Gama com todas informações
-
-```{r}
-M3 = glm(adma ~ grupo, family=Gamma(link="log"), data = df_reg)
-summary(M3)
-tbl_regression(M3, exponentiate = TRUE)
-ConcluiAjuste(M3)
-#plot(M3$fitted.values, residuals(M3, type = "pearson"))
-```
-
-```{r}
-M3 = glm(adma ~ grupo + idade + ldl_dosado, family=Gamma(link="log"), data = df_reg)
-summary(M3)
-tbl_regression(M3, exponentiate = TRUE)
-ConcluiAjuste(M3)
-#plot(M3$fitted.values, residuals(M3, type = "pearson"))
-```
-
-```{r}
-M3 = glm(adma ~ idade + ldl_dosado, family=Gamma(link="log"), data = df_reg)
-summary(M3)
-tbl_regression(M3, exponentiate = TRUE)
-ConcluiAjuste(M3)
-#plot(M3$fitted.values, residuals(M3, type = "pearson"))
-```
-
-- Exemplo de resíduos ruins
-
-```{r}
-M3 = glm(adma ~ grupo + ldl_dosado, family=Gamma(link="log"), data = df_reg)
-summary(M3)
-tbl_regression(M3, exponentiate = TRUE)
-ConcluiAjuste(M3)
-hnp(M3)
-plot(M3$fitted.values, residuals(M3, type = "pearson"))
-```
-
-#### Adma modelo Gama sem algumas informações
 
 - Há 4 valores maiores que 200, todos do grupo 1 (com eclâmpsia);
 
@@ -1113,45 +1085,6 @@ kbl(
 **Principais mudanças:** 
 
 - Um modelo com *idade e ldl_dosado* ou com *grupo e ldl_dosado* ou com todos juntos já não é mais significativo
-- Melhora-se os resíduos
-
-```{r}
-M3 = glm(adma ~ grupo + cintura, family=Gamma(link="log"), data = df_adma)
-summary(M3)
-tbl_regression(M3, exponentiate = TRUE)
-ConcluiAjuste(M3)
-hnp(M3)
-plot(M3$fitted.values, residuals(M3, type = "pearson"))
-```
-
-```{r}
-M3 = glm(adma ~ grupo + categoriaimc, family=Gamma(link="log"), data = df_adma)
-summary(M3)
-tbl_regression(M3, exponentiate = TRUE)
-ConcluiAjuste(M3)
-#hnp(M3)
-#plot(M3$fitted.values, residuals(M3, type = "pearson"))
-```
-
-```{r}
-M3 = glm(adma ~ categoriaimc + escolaridade, family=Gamma(link="log"), data = df_adma)
-summary(M3)
-tbl_regression(M3, exponentiate = TRUE)
-ConcluiAjuste(M3)
-#hnp(M3)
-#plot(M3$fitted.values, residuals(M3, type = "pearson"))
-```
-
-```{r}
-M3 = glm(adma ~ cintura + escolaridade, family=Gamma(link="log"), data = df_adma)
-summary(M3)
-tbl_regression(M3, exponentiate = TRUE)
-ConcluiAjuste(M3)
-#hnp(M3)
-#plot(M3$fitted.values, residuals(M3, type = "pearson"))
-```
-
-#### Mesma ideia para Normal
 
 - O que era significativo no modelo inicial, passa a ser não significativo;
 - Melhor interpretação que o MLG;
@@ -1177,6 +1110,7 @@ durbinWatsonTest(modeloadma3)
 modeloadma4 <- lm(log(adma) ~ grupo + categoriaimc + escolaridade, df_adma)
 modeloadma4 %>% summary()
 shapiro.test(modeloadma4$residuals)
+reglin::ggresiduals(modeloadma4)
 ```
 
 # Regressões Logísticas
