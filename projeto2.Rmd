@@ -128,7 +128,8 @@ colunas_interesse <- c(
   "TABAGISTA 0: não   1:sim", 
   "ETILISTA    0: não   1:sim",
   "Glicemia capilar (mg/dL)",
-  "Glicose"
+  "Glicose",
+  "SÍNDROME METABÓLICA 0:não 1: sim"
   )
 
 renomear_colunas <- c(
@@ -194,7 +195,8 @@ renomear_colunas <- c(
   "tabagista",
   "elitista",
   "glicemia",
-  "glicose"
+  "glicose",
+  "sindrome_met"
   )
 
 df1 <- df1 %>% dplyr::select(all_of(colunas_interesse))
@@ -598,7 +600,7 @@ cols <- df_completo %>% names()
 cat <- c("grupo", "etnia", "escolaridade", "doenca", "num_gestacoes", "gpsanguineo",
          "rh", "medic_diabetes", "medic_hipercol", "tabagista", "elitista", "anti_hiper",
          "hipertensao", "diabetes", "hipercolesterolemia", "sangueo", "categoriaimc",
-         "imcbinario", "escolaridade_bin", "paalto", "escolaridade_niveis")
+         "imcbinario", "escolaridade_bin", "paalto", "escolaridade_niveis", "sindrome_met")
 num <- c("grupo", cols[! cols %in% cat])
 
 df_num <- df_completo %>% select(all_of(num))
@@ -613,7 +615,7 @@ df_reg <- df_completo %>%
     idade, cintura, razaoldl, ldl_dosado, pressao_media, pressao_dias, pressao_sis, creatinina, trombomodulina,
     imc, adma, lym, filtr_glomerular, rbc, wbc, hdl, triglicerides, colesterol_total, anti_hipercolesterolemia, anti_diabetes, paalto, cinturaaumentada, tgalto, hdlbaixo,
     # categoricas
-    hipertensao, gpsanguineo, escolaridade_bin, categoriaimc, imcbinario, anti_hiper, sangueo, escolaridade, escolaridade_niveis
+    hipertensao, gpsanguineo, escolaridade_bin, categoriaimc, imcbinario, anti_hiper, sangueo, escolaridade, escolaridade_niveis, sindrome_met
   )
 
 #df_reg %>% glimpse()
@@ -626,7 +628,8 @@ df_reg <- df_reg %>% mutate(
   tgalto = as.factor(tgalto),
   hdlbaixo = as.factor(hdlbaixo),
   hipertensao = as.factor(hipertensao),
-  anti_hiper = as.factor(anti_hiper)
+  anti_hiper = as.factor(anti_hiper),
+  sindrome_met = as.factor(sindrome_met)
 )
 levels(df_reg$escolaridade) <- c( "4serie","fundamental","medio","tecnico","superior","posgrad")
 levels(df_reg$escolaridade_niveis) <- c( "fundamental","medio","superior")
@@ -668,9 +671,9 @@ Conduzir uma investigação abrangente sobre a pré-eclâmpsia, incluindo planej
 
 ## Objetivos Específicos
 
- - Realizar testes para compreender como e comportam os grupos de mulheres com e sem pré-eclâmpsia.
- - Determinar como o grupo influência na alteração das funções endoteliais e metabólicas.
- - Realizar o dimensionamento amostral, em que será calculado o tamanho da amostra de acordo com o erro esperado.
+-   Realizar testes para compreender como e comportam os grupos de mulheres com e sem pré-eclâmpsia.
+-   Determinar como o grupo influência na alteração das funções endoteliais e metabólicas.
+-   Realizar o dimensionamento amostral, em que será calculado o tamanho da amostra de acordo com o erro esperado.
 
 # Metodologia
 
@@ -680,270 +683,270 @@ As variáveis analisadas foram:
 
 **Idade**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Anos
+-   Unidades de Medida: Anos
 
 **Escolaridade**
 
- - Tipo de Variável: Categórica (Nível de Educação)
+-   Tipo de Variável: Categórica (Nível de Educação)
 
- - Unidades de Medida: N/A
+-   Unidades de Medida: N/A
 
- - Níveis:
+-   Níveis:
 
-   - 0 – Educação infantil
+    -   0 -- Educação infantil
 
-   - 1 - Fundamental
+    -   1 - Fundamental
 
-   - 2 - Médio
+    -   2 - Médio
 
-   - 3 - Superior
+    -   3 - Superior
 
-   - 4 - Pós-graduação
+    -   4 - Pós-graduação
 
-   - 5 - Técnico
+    -   5 - Técnico
 
 **Número de Gestações**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: N/A
+-   Unidades de Medida: N/A
 
 **Anos Desde a Última Gestação**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Anos
+-   Unidades de Medida: Anos
 
 **Peso da Mulher**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Kilogramas
+-   Unidades de Medida: Kilogramas
 
 **Índice de Massa Corporal (IMC)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: N/A
+-   Unidades de Medida: N/A
 
 **Percentual de Gordura**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Porcentagem
+-   Unidades de Medida: Porcentagem
 
 **Pressão Sistólica**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mmHg (milímetros de mercúrio)
+-   Unidades de Medida: mmHg (milímetros de mercúrio)
 
 **Pressão Diastólica**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mmHg (milímetros de mercúrio)
+-   Unidades de Medida: mmHg (milímetros de mercúrio)
 
 **Pressão Arterial Média**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mmHg (milímetros de mercúrio)
+-   Unidades de Medida: mmHg (milímetros de mercúrio)
 
 **Circunferência de Cintura**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Centímetros
+-   Unidades de Medida: Centímetros
 
 **Circunferência de Abdômen**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Centímetros
+-   Unidades de Medida: Centímetros
 
 **Circunferência de Quadril**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Centímetros
+-   Unidades de Medida: Centímetros
 
 **Relação Cintura/Quadril**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: N/A
+-   Unidades de Medida: N/A
 
 **Neutrófilos**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Contagem Absoluta
+-   Unidades de Medida: Contagem Absoluta
 
 **Linfócitos**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Contagem Absoluta
+-   Unidades de Medida: Contagem Absoluta
 
 **Razão Neutrófilo/Linfócito (NLR)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: N/A
+-   Unidades de Medida: N/A
 
 **Colesterol Total**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mg/dL (miligramas por decilitro)
+-   Unidades de Medida: mg/dL (miligramas por decilitro)
 
 **HDL (High-Density Lipoprotein/ Lipoproteína de Alta Densidade)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mg/dL (miligramas por decilitro)
+-   Unidades de Medida: mg/dL (miligramas por decilitro)
 
 **LDL Dosado (Low-Density Lipoprotein/ Lipoproteína de Baixa Densidade)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mg/dL (miligramas por decilitro)
+-   Unidades de Medida: mg/dL (miligramas por decilitro)
 
 **VLDL (Very Low-Density Lipoprotein/ Lipoproteína de Muito Baixa Densidade)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mg/dL (miligramas por decilitro)
+-   Unidades de Medida: mg/dL (miligramas por decilitro)
 
 **Não-HDL (Non-High-Density Lipoprotein/ Lipoproteína de Não Alta Densidade)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mg/dL (miligramas por decilitro)
+-   Unidades de Medida: mg/dL (miligramas por decilitro)
 
 **Triglicérides**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mg/dL (miligramas por decilitro)
+-   Unidades de Medida: mg/dL (miligramas por decilitro)
 
 **Hemoglobina Glicada (HbA1c)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Porcentagem
+-   Unidades de Medida: Porcentagem
 
 **Creatinina**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mg/dL (miligramas por decilitro)
+-   Unidades de Medida: mg/dL (miligramas por decilitro)
 
 **Ritmo de Filtração Glomerular**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mL/min (mililitros por minuto)
+-   Unidades de Medida: mL/min (mililitros por minuto)
 
 **TGP/ALT (Transaminase Glutâmica Pirúvica / Alanina Transaminase)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: U/L (unidades por litro)
+-   Unidades de Medida: U/L (unidades por litro)
 
 **TGO/AST (Transaminase Glutâmica Oxalacética / Aspartato Transaminase)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: U/L (unidades por litro)
+-   Unidades de Medida: U/L (unidades por litro)
 
 **Ácido Úrico**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: mg/dL (miligramas por decilitro)
+-   Unidades de Medida: mg/dL (miligramas por decilitro)
 
 **CK (Creatina Quinase)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: U/L (unidades por litro)
+-   Unidades de Medida: U/L (unidades por litro)
 
 **Gama GT (Gama Glutamiltransferase)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: U/L (unidades por litro)
+-   Unidades de Medida: U/L (unidades por litro)
 
 **Peso do Bebê**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: Kilogramas
+-   Unidades de Medida: Kilogramas
 
 **PAI-1 (Inibidor-1 do Ativador de Plasminogênio)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: ng/mL (nanogramas por mililitro)
+-   Unidades de Medida: ng/mL (nanogramas por mililitro)
 
 **Trombomodulina**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: ng/mL (nanogramas por mililitro)
+-   Unidades de Medida: ng/mL (nanogramas por mililitro)
 
 **ADMA (Asymmetric Dimethylarginine/ Dimetilarginina assimétrica)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: ng/mL (nanogramas por mililitro)
+-   Unidades de Medida: ng/mL (nanogramas por mililitro)
 
 **sFlt1 (Soluble Fms-Like Tyrosine Kinase-1)**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: N/A (cálculos necessários)
+-   Unidades de Medida: N/A (cálculos necessários)
 
 **Dímero-D**
 
- - Tipo de Variável: Numérica
+-   Tipo de Variável: Numérica
 
- - Unidades de Medida: ng/mL (nanogramas por mililitro)
+-   Unidades de Medida: ng/mL (nanogramas por mililitro)
 
 **Tabagismo**
 
- - Tipo de Variável: Categórica Nominal
+-   Tipo de Variável: Categórica Nominal
 
- - Níveis:
+-   Níveis:
 
-   - 0 – Não fumante
+    -   0 -- Não fumante
 
-   - 1 - Fumante  
-   
+    -   1 - Fumante
+
 **Grupo (em relação à pré-eclâmpsia)**
 
- - Tipo de Variável: Categórica Nominal
+-   Tipo de Variável: Categórica Nominal
 
- - Níveis:
+-   Níveis:
 
-   - 1 – Não teve pre-eclâmpsia
+    -   1 -- Não teve pre-eclâmpsia
 
-   - 2 - Teve pré-eclâmpsia  
+    -   2 - Teve pré-eclâmpsia
 
 ## Tamanho Amostral
 
 Para o cálculo do tamanho da amostra onde o objetivo do estudo era validar se a amostra usada no trabalho é significativa para comparar dois grupos: grupo tratamento com um controle, no contexto do trabalho o grupo controle seriam as mulheres que tiveram gestações saudáveis *(MN)* e o grupo tratamento seriam mulheres que tiveram pré-eclâmpsia *(MP)*. Optou-se por usar a informação da variância e da diferença das médias das variáveis que foram usadas como resposta na regressão. São elas:
 
-- PAS: indica Pressão Arterial Sitólica;
-- PAD: indica Pressão Arterial Diastólica;
-- PAM: indica Pressão Arterial Média;
-- IMC: indica Índice de Massa Corporal;
-- LDL: indica Lipoproteínas de Baixa Densidade;
-- CIN: indica Circunferência da Cintura.
+-   PAS: indica Pressão Arterial Sitólica;
+-   PAD: indica Pressão Arterial Diastólica;
+-   PAM: indica Pressão Arterial Média;
+-   IMC: indica Índice de Massa Corporal;
+-   LDL: indica Lipoproteínas de Baixa Densidade;
+-   CIN: indica Circunferência da Cintura.
 
 Como a finalidade é apenas validar, as variâncias para os grupos, denotados por $\sigma^2_{MN}$ e $\sigma^2_{MP}$, respectivamente, serão obtidas por meio da própria base de dados repassada para esse projeto. Portanto, para o cálculo, considerou-se as seguintes variâncias por grupo:
 
@@ -1000,7 +1003,7 @@ kbl(
 
 Então, escolhendo um nível de significância de $\alpha = 0,05$ e variandos-se o poder de teste de ($1 - \beta$), tem-se que os resultados encontrados serão discutivos na seção de *Resultados*.
 
-# Resultados 
+# Resultados
 
 ## Testes de Hipóteses
 
@@ -1303,6 +1306,7 @@ durbinWatsonTest(modelopam)
 ```
 
 -   **M2**: Modelo com escolaridade sendo significativa
+
 ```{r}
 modelopam2 <- lm(pressao_media ~ grupo + anti_hiper + imc + idade + escolaridade_niveis, data = df_reg)
 modelopam2 %>% summary()
@@ -1365,7 +1369,7 @@ durbinWatsonTest(modelotromb)
 
 Modelo Normal para ADMA
 
-- Tiramos 1 observação influente, resultou em melhoria do $R^2_{Ajustado}$ e nas estimativas dos coeficientes (Maior mudança: Intercepto saiu de 204 para 101; idade de -5,7 para -2,5)
+-   Tiramos 1 observação influente, resultou em melhoria do $R^2_{Ajustado}$ e nas estimativas dos coeficientes (Maior mudança: Intercepto saiu de 204 para 101; idade de -5,7 para -2,5)
 
 ```{r}
 modeloadma <- lm(adma ~ idade + ldl_dosado, df_reg[-c(5),])
@@ -1378,7 +1382,7 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modeloadma)
 ```
 
-- Tiramos 2 observações influentes e a regressão deixa de ser significativa (inclusive sem ldl):
+-   Tiramos 2 observações influentes e a regressão deixa de ser significativa (inclusive sem ldl):
 
 Isso gera mais influentes, tirando-os, continua não significativa.
 
@@ -1387,7 +1391,7 @@ modeloadma2 <- lm(adma ~ idade + ldl_dosado, df_reg[-c(5,71),])
 summary(modeloadma2)
 ```
 
-- O gráfico de ADMA indicou que assume valores maiores que zero e com cauda longa;
+-   O gráfico de ADMA indicou que assume valores maiores que zero e com cauda longa;
 
 ```{r}
 df_adma = df_reg %>% drop_na(adma)
@@ -1398,7 +1402,7 @@ plot(
   )
 ```
 
-- Há 4 valores maiores que 200, todos do grupo 1 (com eclâmpsia);
+-   Há 4 valores maiores que 200, todos do grupo 1 (com eclâmpsia);
 
 ```{r}
 plot(
@@ -1409,9 +1413,9 @@ plot(
 df_adma <- df_adma %>% filter(adma < 200)
 ```
 
-- Abaixo vemos como retirar esses casos extremos contribuiram para a melhoria de algumas estimativas iniciais, **o desvio padrão do grupo MP reduziu de 167 para 38**
+-   Abaixo vemos como retirar esses casos extremos contribuiram para a melhoria de algumas estimativas iniciais, **o desvio padrão do grupo MP reduziu de 167 para 38**
 
-- Após a retirada os dados continuaram balenceados por grupo;
+-   Após a retirada os dados continuaram balenceados por grupo;
 
 ```{r}
 kbl(
@@ -1426,15 +1430,19 @@ kbl(
   column_spec(1, bold = T)
 ```
 
-**Principais mudanças:** 
+**Principais mudanças:**
 
-- Um modelo com *idade e ldl_dosado* ou com *grupo e ldl_dosado* ou com todos juntos já não é mais significativo
+-   Um modelo com *idade e ldl_dosado* ou com *grupo e ldl_dosado* ou com todos juntos já não é mais significativo
 
-- O que era significativo no modelo inicial, passa a ser não significativo;
-- Melhor interpretação que o MLG;
-- Conclusão similar a todos demais;
-- Melhorou resíduos;
-- Regressão significativa;
+-   O que era significativo no modelo inicial, passa a ser não significativo;
+
+-   Melhor interpretação que o MLG;
+
+-   Conclusão similar a todos demais;
+
+-   Melhorou resíduos;
+
+-   Regressão significativa;
 
 ```{r}
 modeloadma3 <- lm(adma ~ grupo + categoriaimc + escolaridade, df_adma)
@@ -1447,8 +1455,8 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modeloadma3)
 ```
 
-- Transformação na resposta, log(adma) normaliza resíduos
-- R2ajustado pouco penalizado
+-   Transformação na resposta, log(adma) normaliza resíduos
+-   R2ajustado pouco penalizado
 
 ```{r}
 modeloadma4 <- lm(log(adma) ~ grupo + categoriaimc + escolaridade, df_adma)
@@ -1463,7 +1471,14 @@ modeloadma4 %>% summary()
 shapiro.test(modeloadma4$residuals)
 ```
 
-## Resultado Cálculo Amostral
+# Síndrome Metabólica
+
+```{r}
+modelo_sin <- glm(sindrome_met ~ grupo + escolaridade_niveis,family = binomial(link = "logit"), data = df_reg)
+modelo_sin %>% summary()
+```
+
+##  Resultado Cálculo Amostral
 
 Optou-se por variar o $\beta$ no estudo ($1-\beta$ indica o poder do teste). Testes mais poderosos implicam em maior rigor do tamanho amostral, espera-se aumento do tamanho da amostra quando avaliar isso. Vale lembrar que usualmente usa-se o poder de 90%.
 
@@ -1526,8 +1541,8 @@ lista_n[[5]] %>% as_tibble() %>%
   kable_styling("striped", full_width = F)
 ```
 
-# Conclusão 
+# Conclusão
 
 # Referências
 
-<http://ndl.ethernet.edu.et/bitstream/123456789/15304/1/9103.pdf> 
+<http://ndl.ethernet.edu.et/bitstream/123456789/15304/1/9103.pdf>
