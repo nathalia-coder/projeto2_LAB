@@ -579,6 +579,10 @@ df_completo <- left_join(df1 %>% select(-ck),
       imc <= 29.99 ~ "sobrepeso",
       TRUE ~ "obesidade") %>% as.factor(),
     escolaridade_bin = ifelse(escolaridade %in% c(3, 4), "superior", "basico") %>% as.factor(),
+    escolaridade_niveis = case_when(
+      escolaridade %in% c(0, 1) ~ "fundamental",
+      escolaridade %in% c(2, 5) ~ "medio",
+      escolaridade %in% c(3, 4) ~ "superior"),
     imcbinario = ifelse(imc < 24.99, "normal", "alterado") %>% as.factor()
 )
 
@@ -594,11 +598,38 @@ cols <- df_completo %>% names()
 cat <- c("grupo", "etnia", "escolaridade", "doenca", "num_gestacoes", "gpsanguineo",
          "rh", "medic_diabetes", "medic_hipercol", "tabagista", "elitista", "anti_hiper",
          "hipertensao", "diabetes", "hipercolesterolemia", "sangueo", "categoriaimc",
-         "imcbinario", "escolaridade_bin")
+         "imcbinario", "escolaridade_bin", "paalto", "escolaridade_niveis")
 num <- c("grupo", cols[! cols %in% cat])
 
 df_num <- df_completo %>% select(all_of(num))
 df_cat <- df_completo %>% select(all_of(cat))
+```
+
+```{r covariaveis_regressao}
+df_reg <- df_completo %>% 
+  select(
+    grupo,
+    # numericas
+    idade, cintura, razaoldl, ldl_dosado, pressao_media, pressao_dias, pressao_sis, creatinina, trombomodulina,
+    imc, adma, lym, filtr_glomerular, rbc, wbc, hdl, triglicerides, colesterol_total, anti_hipercolesterolemia, anti_diabetes, paalto, cinturaaumentada, tgalto, hdlbaixo,
+    # categoricas
+    hipertensao, gpsanguineo, escolaridade_bin, categoriaimc, imcbinario, anti_hiper, sangueo, escolaridade, escolaridade_niveis
+  )
+
+#df_reg %>% glimpse()
+# transformando as categoricas
+df_reg <- df_reg %>% mutate(
+  anti_hipercolesterolemia = as.factor(anti_hipercolesterolemia),
+  anti_diabetes = as.factor(anti_diabetes),
+  paalto = as.factor(paalto),
+  cinturaaumentada = as.factor(cinturaaumentada),
+  tgalto = as.factor(tgalto),
+  hdlbaixo = as.factor(hdlbaixo),
+  hipertensao = as.factor(hipertensao),
+  anti_hiper = as.factor(anti_hiper)
+)
+levels(df_reg$escolaridade) <- c( "4serie","fundamental","medio","tecnico","superior","posgrad")
+levels(df_reg$escolaridade_niveis) <- c( "fundamental","medio","superior")
 ```
 
 ```{r tema_graficos}
@@ -619,9 +650,361 @@ tema = theme_minimal() +
 theme_set(tema)
 ```
 
-# Resumo testes de hipóteses
+# Introdução
 
-## Dados numéricos
+A pré-eclâmpsia, caracterizada por hipertensão arterial e danos a órgãos, é uma complicação gestacional que geralmente se manifesta após a 20ª semana de gravidez. Ela é frequentemente acompanhada de sintomas como aumento da pressão arterial, presença de proteína na urina, edema e, em casos mais graves, eclâmpsia, que pode resultar em convulsões. Esta condição não apenas representa uma ameaça direta à saúde da mãe, mas também pode ter sérias consequências para o feto, incluindo restrição de crescimento intrauterino e parto prematuro. A magnitude do problema da pré-eclâmpsia é evidente nas estatísticas globais de saúde materna. A pré-eclâmpsia é um fator de risco para complicações de saúde a longo prazo para a mãe, como doença cardíaca e hipertensão.
+
+Neste estudo, realizamos uma análise estatística abrangente. Isso incluiu a utilização de uma análise descritiva dos dados coletados para melhor compreensão do perfil das pacientes, bem como o cálculo amostral para determinar o tamanho ideal da amostra para garantir resultados confiáveis e uso de Regressão Linear para identificar se os grupos de estudo alteram algumas variáveis contínuas de interesse que estão associadas a Função Endotelial, além de Regressão Logística para identificar se o grupo é fator de risco associado ao evento de ter ou não Síndrome Metabólica. Esta análise estatística detalhada visa aprimorar a compreensão da pré-eclâmpsia, suas causas potenciais e possíveis estratégias de prevenção, contribuindo assim para o avanço das práticas médicas e políticas de saúde relacionadas à gravidez.
+
+Através deste estudo multidisciplinar, esperamos fornecer insights valiosos para profissionais de saúde, pesquisadores e formuladores de políticas, a fim de melhorar o diagnóstico precoce, o tratamento e a prevenção da pré-eclâmpsia, com o objetivo de promover a saúde materna e neonatal em todo o mundo.
+
+Este trabalho tem como objetivo explorar uma ampla gama de dados relacionados às mulheres que tiveram ou não pré-eclâmpsia, incluindo características físicas, resultados de exames laboratoriais, histórico de doenças e hábitos. A pré-eclâmpsia, uma condição médica complexa que afeta mulheres grávidas, é de grande interesse para a comunidade médica devido às suas implicações para a saúde materna e neonatal.
+
+# Objetivo
+
+## Objetivo Geral
+
+Conduzir uma investigação abrangente sobre a pré-eclâmpsia, incluindo planejamento amostral, análise das diferenças entre mulheres saudáveis (MN) e aquelas com pré-eclâmpsia (MP), estudo da relação entre função endotelial e síndrome metabólica com a pré-eclâmpsia, a qual é um dos principais fatores de risco para a alteração dessas variáveis.
+
+## Objetivos Específicos
+
+ - Realizar testes para compreender como e comportam os grupos de mulheres com e sem pré-eclâmpsia.
+ - Determinar como o grupo influência na alteração das funções endoteliais e metabólicas.
+ - Realizar o dimensionamento amostral, em que será calculado o tamanho da amostra de acordo com o erro esperado.
+
+# Metodologia
+
+## Variáveis utilizadas
+
+As variáveis analisadas foram:
+
+**Idade**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Anos
+
+**Escolaridade**
+
+ - Tipo de Variável: Categórica (Nível de Educação)
+
+ - Unidades de Medida: N/A
+
+ - Níveis:
+
+   - 0 – Educação infantil
+
+   - 1 - Fundamental
+
+   - 2 - Médio
+
+   - 3 - Superior
+
+   - 4 - Pós-graduação
+
+   - 5 - Técnico
+
+**Número de Gestações**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: N/A
+
+**Anos Desde a Última Gestação**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Anos
+
+**Peso da Mulher**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Kilogramas
+
+**Índice de Massa Corporal (IMC)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: N/A
+
+**Percentual de Gordura**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Porcentagem
+
+**Pressão Sistólica**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mmHg (milímetros de mercúrio)
+
+**Pressão Diastólica**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mmHg (milímetros de mercúrio)
+
+**Pressão Arterial Média**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mmHg (milímetros de mercúrio)
+
+**Circunferência de Cintura**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Centímetros
+
+**Circunferência de Abdômen**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Centímetros
+
+**Circunferência de Quadril**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Centímetros
+
+**Relação Cintura/Quadril**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: N/A
+
+**Neutrófilos**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Contagem Absoluta
+
+**Linfócitos**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Contagem Absoluta
+
+**Razão Neutrófilo/Linfócito (NLR)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: N/A
+
+**Colesterol Total**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mg/dL (miligramas por decilitro)
+
+**HDL (High-Density Lipoprotein/ Lipoproteína de Alta Densidade)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mg/dL (miligramas por decilitro)
+
+**LDL Dosado (Low-Density Lipoprotein/ Lipoproteína de Baixa Densidade)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mg/dL (miligramas por decilitro)
+
+**VLDL (Very Low-Density Lipoprotein/ Lipoproteína de Muito Baixa Densidade)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mg/dL (miligramas por decilitro)
+
+**Não-HDL (Non-High-Density Lipoprotein/ Lipoproteína de Não Alta Densidade)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mg/dL (miligramas por decilitro)
+
+**Triglicérides**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mg/dL (miligramas por decilitro)
+
+**Hemoglobina Glicada (HbA1c)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Porcentagem
+
+**Creatinina**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mg/dL (miligramas por decilitro)
+
+**Ritmo de Filtração Glomerular**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mL/min (mililitros por minuto)
+
+**TGP/ALT (Transaminase Glutâmica Pirúvica / Alanina Transaminase)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: U/L (unidades por litro)
+
+**TGO/AST (Transaminase Glutâmica Oxalacética / Aspartato Transaminase)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: U/L (unidades por litro)
+
+**Ácido Úrico**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: mg/dL (miligramas por decilitro)
+
+**CK (Creatina Quinase)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: U/L (unidades por litro)
+
+**Gama GT (Gama Glutamiltransferase)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: U/L (unidades por litro)
+
+**Peso do Bebê**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: Kilogramas
+
+**PAI-1 (Inibidor-1 do Ativador de Plasminogênio)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: ng/mL (nanogramas por mililitro)
+
+**Trombomodulina**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: ng/mL (nanogramas por mililitro)
+
+**ADMA (Asymmetric Dimethylarginine/ Dimetilarginina assimétrica)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: ng/mL (nanogramas por mililitro)
+
+**sFlt1 (Soluble Fms-Like Tyrosine Kinase-1)**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: N/A (cálculos necessários)
+
+**Dímero-D**
+
+ - Tipo de Variável: Numérica
+
+ - Unidades de Medida: ng/mL (nanogramas por mililitro)
+
+**Tabagismo**
+
+ - Tipo de Variável: Categórica Nominal
+
+ - Níveis:
+
+   - 0 – Não fumante
+
+   - 1 - Fumante  
+   
+**Grupo (em relação à pré-eclâmpsia)**
+
+ - Tipo de Variável: Categórica Nominal
+
+ - Níveis:
+
+   - 1 – Não teve pre-eclâmpsia
+
+   - 2 - Teve pré-eclâmpsia  
+
+## Tamanho Amostral
+
+Para o cálculo do tamanho da amostra onde o objetivo do estudo era validar se a amostra usada no trabalho é significativa para comparar dois grupos: grupo tratamento com um controle, no contexto do trabalho o grupo controle seriam as mulheres que tiveram gestações saudáveis *(MN)* e o grupo tratamento seriam mulheres que tiveram pré-eclâmpsia *(MP)*. Optou-se por usar a informação da variância e da diferença das médias das variáveis que foram usadas como resposta na regressão. São elas:
+
+- PAS: indica Pressão Arterial Sitólica;
+- PAD: indica Pressão Arterial Diastólica;
+- PAM: indica Pressão Arterial Média;
+- IMC: indica Índice de Massa Corporal;
+- LDL: indica Lipoproteínas de Baixa Densidade;
+- CIN: indica Circunferência da Cintura.
+
+Como a finalidade é apenas validar, as variâncias para os grupos, denotados por $\sigma^2_{MN}$ e $\sigma^2_{MP}$, respectivamente, serão obtidas por meio da própria base de dados repassada para esse projeto. Portanto, para o cálculo, considerou-se as seguintes variâncias por grupo:
+
+```{r}
+df_calc_amostra_var <- df_reg %>% 
+  mutate(Grupo = ifelse(grupo == 0, "MN", "MP")) %>% 
+  group_by(Grupo) %>% 
+  summarise(
+    'var PAS'   = var(pressao_sis, na.rm = T),
+    'var PAD'   = var(pressao_dias, na.rm = T),
+    'var PAM'   = var(pressao_media, na.rm = T),
+    'var IMC'   = var(imc, na.rm = T),
+    'var LDL'   = var(ldl_dosado, na.rm = T),
+    'var CIN'   = var(cintura, na.rm = T)
+    )
+
+kbl(
+  df_calc_amostra_var,
+  digits = 0,
+  format.args = list(decimal.mark = ',', big.mark = "."), 
+  caption = "Cálculo das variâncias por grupo"
+  ) %>%
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
+```
+
+O *delta* ($\delta$) denota a diferença das médias do grupo MN e MP, $|\mu_{MN} - \mu_{MP}| < \delta$. Da mesma forma, essa informação foi retirada da base dados a fim de validação. A diferença das médias encontrada para cada caso está descrito abaixo:
+
+```{r}
+df_calc_amostra_mean <- df_reg %>% 
+  group_by(grupo) %>% 
+  summarise(
+    'delta PAS' = mean(pressao_sis, na.rm = T),
+    'delta PAD' = mean(pressao_dias, na.rm = T),
+    'delta PAM' = mean(pressao_media, na.rm = T),
+    'delta IMC' = mean(imc, na.rm = T),
+    'delta LDL' = mean(ldl_dosado, na.rm = T),
+    'delta CIN' = mean(cintura, na.rm = T)
+    )
+
+dif = abs(
+  df_calc_amostra_mean %>% filter(grupo == 0) %>% select(-grupo) - 
+  df_calc_amostra_mean %>% filter(grupo == 1) %>% select(-grupo)
+  ) # dif medias
+
+kbl(
+  dif,
+  digits = 0,
+  format.args = list(decimal.mark = ',', big.mark = "."), 
+  caption = "Cálculo da diferença das médias por grupo"
+  ) %>%
+  kable_paper(full_width = F)
+```
+
+Então, escolhendo um nível de significância de $\alpha = 0,05$ e variandos-se o poder de teste de ($1 - \beta$), tem-se que os resultados encontrados serão discutivos na seção de *Resultados*.
+
+# Resultados 
+
+## Testes de Hipóteses
+
+### Dados numéricos
 
 Para os dados numéricos, os testes tiveram por hipótese geral:
 
@@ -686,7 +1069,7 @@ kbl(
   collapse_rows(columns = c(1,13:14))
 ```
 
-## Dados categóricos
+### Dados categóricos
 
 ```{r}
 # Teste de hipóteses para dados categóricos
@@ -825,39 +1208,7 @@ corrplot::corrplot(cor(data_sig_sem_corr),
                    )
 ```
 
-# Regressões lineares
-
-```{r covariaveis_regressao}
-df_reg <- df_completo %>% 
-  select(
-    grupo,
-    # numericas
-    idade, cintura, razaoldl, ldl_dosado, pressao_media, pressao_dias, pressao_sis, creatinina, trombomodulina,
-    imc, adma, lym, filtr_glomerular, rbc, wbc, hdl, triglicerides, colesterol_total, anti_hipercolesterolemia, anti_diabetes, paalto, cinturaaumentada, tgalto, hdlbaixo,
-    # categoricas
-    hipertensao, gpsanguineo, escolaridade_bin, categoriaimc, imcbinario, anti_hiper, sangueo, escolaridade
-    ) %>%
-  mutate(escolaridade_niveis = case_when(
-    escolaridade %in% c(0, 1) ~ "fundamental",
-    escolaridade %in% c(2, 5) ~ "medio",
-    escolaridade %in% c(3, 4) ~ "superior")) %>% 
-  as_tibble()
-
-#df_reg %>% glimpse()
-# transformando as categoricas
-df_reg <- df_reg %>% mutate(
-  anti_hipercolesterolemia = as.factor(anti_hipercolesterolemia),
-  anti_diabetes = as.factor(anti_diabetes),
-  paalto = as.factor(paalto),
-  cinturaaumentada = as.factor(cinturaaumentada),
-  tgalto = as.factor(tgalto),
-  hdlbaixo = as.factor(hdlbaixo),
-  hipertensao = as.factor(hipertensao),
-  anti_hiper = as.factor(anti_hiper)
-)
-levels(df_reg$escolaridade) <- c( "4serie","fundamental","medio","tecnico","superior","posgrad")
-levels(df_reg$escolaridade_niveis) <- c( "fundamental","medio","superior")
-```
+## Resultado Regressões Lineares
 
 ```{r funcao_resumo_ajuste}
 ConcluiAjuste <- function(fit){
@@ -874,7 +1225,7 @@ ConcluiAjuste <- function(fit){
 }
 ```
 
-## PAS
+### PAS
 
 -   **M1**: Modelo sem escolaridade
 
@@ -898,19 +1249,6 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modelopas2)
 ```
 
-```{r}
-
-levels(df_reg$escolaridade)
-
-modelopas2 <- lm(pressao_sis ~ grupo + idade + anti_hiper + imc + escolaridade, data = df_reg)
-modelopas2 %>% summary()
-##reglin::ggresiduals(modelopas2)
-shapiro.test(modelopas2$residuals)
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modelopas2)
-```
-
-
 -   Comparação **M1** e **M2**:
 
 Indica pelo menos um nível de escolaridade significativo.
@@ -919,7 +1257,7 @@ Indica pelo menos um nível de escolaridade significativo.
 anova(modelopas, modelopas2)
 ```
 
-## PAD
+### PAD
 
 -   **M1**: Modelo sem escolaridade
 
@@ -951,7 +1289,7 @@ Indica pelo menos um nível de escolaridade significativo.
 anova(modelopad, modelopad2)
 ```
 
-## PAM
+### PAM
 
 -   **M1**: Modelo sem escolaridade
 
@@ -982,7 +1320,7 @@ Indica pelo menos um nível de escolaridade significativo.
 anova(modelopam, modelopam2)
 ```
 
-## IMC
+### IMC
 
 ```{r}
 modeloimc <- lm(imc ~ grupo + pressao_media + triglicerides, df_reg)
@@ -999,7 +1337,7 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modeloimc)
 ```
 
-## LDL
+### LDL
 
 ```{r}
 modeloldl <- lm(ldl_dosado ~ grupo + idade, df_reg)
@@ -1012,7 +1350,7 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modeloldl)
 ```
 
-## Trombomodulina (creatinina poderia entrar se fosse importante)
+### Trombomodulina (creatinina poderia entrar se fosse importante)
 
 ```{r}
 modelotromb <- lm(trombomodulina ~ grupo + escolaridade_bin, data = df_reg)
@@ -1023,9 +1361,9 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modelotromb)
 ```
 
-## ADMA
+### ADMA
 
-### Modelo Normal para ADMA
+Modelo Normal para ADMA
 
 - Tiramos 1 observação influente, resultou em melhoria do $R^2_{Ajustado}$ e nas estimativas dos coeficientes (Maior mudança: Intercepto saiu de 204 para 101; idade de -5,7 para -2,5)
 
@@ -1125,42 +1463,16 @@ modeloadma4 %>% summary()
 shapiro.test(modeloadma4$residuals)
 ```
 
-# Cálculo Amostral
+## Resultado Cálculo Amostral
 
-Optou-se por variar o $\beta$ no estudo (1 - $\beta$ indica o poder do teste). Testes mais poderosos implicam em maior rigor do tamanho amostral, espera-se aumento do tamanho da amostra quando avaliar isso. Vale lembrar que usualmente usa-se o poder de 90%.
+Optou-se por variar o $\beta$ no estudo ($1-\beta$ indica o poder do teste). Testes mais poderosos implicam em maior rigor do tamanho amostral, espera-se aumento do tamanho da amostra quando avaliar isso. Vale lembrar que usualmente usa-se o poder de 90%.
 
 ```{r}
-df_calc_amostra_mean <- df_reg %>% 
-  group_by(grupo) %>% 
-  summarise(
-    media_PAS = mean(pressao_sis, na.rm = T),
-    media_PAD = mean(pressao_dias, na.rm = T),
-    media_PAM = mean(pressao_media, na.rm = T),
-    media_IMC = mean(imc, na.rm = T),
-    media_LDL = mean(ldl_dosado, na.rm = T),
-    media_CIN = mean(cintura, na.rm = T)
-    )
-
-df_calc_amostra_var <- df_reg %>% 
-  group_by(grupo) %>% 
-  summarise(
-    var_PAS   = var(pressao_sis, na.rm = T),
-    var_PAD   = var(pressao_dias, na.rm = T),
-    var_PAM   = var(pressao_media, na.rm = T),
-    var_IMC   = var(imc, na.rm = T),
-    var_LDL   = var(ldl_dosado, na.rm = T),
-    var_CIN   = var(cintura, na.rm = T)
-    )
-
 ## Calculo
-var1 <- df_calc_amostra_var %>% filter(grupo == 0) %>% select(-grupo)
-var2 <- df_calc_amostra_var %>% filter(grupo == 1) %>% select(-grupo)
+var1 <- df_calc_amostra_var %>% filter(Grupo == "MN") %>% select(-Grupo)
+var2 <- df_calc_amostra_var %>% filter(Grupo == "MP") %>% select(-Grupo)
 alpha <- 0.05
 beta <- c(0.01,0.05,0.1)
-dif = abs(
-  df_calc_amostra_mean %>% filter(grupo == 0) %>% select(-grupo) - 
-  df_calc_amostra_mean %>% filter(grupo == 1) %>% select(-grupo)
-  ) # dif medias
 
 z2 <- qnorm(1 - alpha/2)
 zbeta <- qnorm(1 - beta)
@@ -1183,28 +1495,7 @@ for (i in 1:ncol(var1)){
 }
 ```
 
-Para o cálculo, considerou-se as variâncias por grupo e a diferença das médias por grupo, resumo abaixo:
-
-```{r}
-kbl(
-  df_calc_amostra_var,
-  digits = 0,
-  format.args = list(decimal.mark = ',', big.mark = "."), 
-  caption = "Cálculo das variâncias por grupo"
-  ) %>%
-  kable_paper(full_width = F) %>%
-  column_spec(1, bold = T)
-
-kbl(
-  dif,
-  digits = 0,
-  format.args = list(decimal.mark = ',', big.mark = "."), 
-  caption = "Cálculo da diferença das médias por grupo"
-  ) %>%
-  kable_paper(full_width = F)
-```
-
-O Resultado obtido está abaixo:
+Os Resultados obtidos estão abaixo:
 
 ```{r}
 # ordem de cada calc amostral, 1 eh pas, 2 eh pad...
@@ -1234,3 +1525,9 @@ lista_n[[5]] %>% as_tibble() %>%
   kable(caption = "Cálculo do tamanho amostral para CINTURA") %>%
   kable_styling("striped", full_width = F)
 ```
+
+# Conclusão 
+
+# Referências
+
+<http://ndl.ethernet.edu.et/bitstream/123456789/15304/1/9103.pdf> 
