@@ -1294,102 +1294,51 @@ ConcluiAjuste <- function(fit){
   kable_paper(full_width = F) %>%
   column_spec(1, bold = T)
 }
+
+resumo_normal <- function(teste, variavel){
+  return(
+    tibble(
+      Modelo = variavel,
+      Pvalor = teste$p.value %>% round(3)
+      )
+  )
+}
 ```
 
 ### PAS
 
--   **M1**: Modelo sem escolaridade
-
-```{r}
-modelopas <- lm(pressao_sis ~ grupo + idade + anti_hiper + imc, data = df_reg)
-modelopas %>% summary()
-##reglin::ggresiduals(modelopas)
-shapiro.test(modelopas$residuals)
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modelopas)
-```
-
--   **M2**: Modelo com escolaridade sendo significativa
-
 ```{r}
 modelopas2 <- lm(pressao_sis ~ grupo + idade + anti_hiper + imc + escolaridade_niveis, data = df_reg)
 modelopas2 %>% summary()
-##reglin::ggresiduals(modelopas2)
-shapiro.test(modelopas2$residuals)
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modelopas2)
-```
 
--   Comparação **M1** e **M2**:
-
-Indica pelo menos um nível de escolaridade significativo.
-
-```{r}
-anova(modelopas, modelopas2)
+residuo_modelopas2 <- reglin::ggresiduals(modelopas2)
+normalidade_modelopas2 <- resumo_normal(
+  shapiro.test(modelopas2$residuals), "Modelo Pressão Sistólica"
+  )
 ```
 
 ### PAD
 
--   **M1**: Modelo sem escolaridade
-
-```{r}
-modelopad <- lm(pressao_dias ~ grupo + anti_hiper + imc + idade, data = df_reg)
-modelopad %>% summary()
-##reglin::ggresiduals(modelopad)
-shapiro.test(modelopad$residuals)
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modelopad)
-```
-
--   **M2**: Modelo com escolaridade sendo significativa
-
 ```{r}
 modelopad2 <- lm(pressao_dias ~ grupo + anti_hiper + imc + idade + escolaridade_niveis, data = df_reg)
 modelopad2 %>% summary()
-##reglin::ggresiduals(modelopad2)
-shapiro.test(modelopad2$residuals)
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modelopad2)
-```
 
--   Comparação **M1** e **M2**:
-
-Indica pelo menos um nível de escolaridade significativo.
-
-```{r}
-anova(modelopad, modelopad2)
+residuo_modelopad2 <- reglin::ggresiduals(modelopad2)
+normalidade_modelopad2 <- resumo_normal(
+  shapiro.test(modelopad2$residuals), "Modelo Pressão Diastólica"
+  )
 ```
 
 ### PAM
 
--   **M1**: Modelo sem escolaridade
-
-```{r}
-modelopam <- lm(pressao_media ~ grupo + anti_hiper + imc + idade, data = df_reg)
-modelopam %>% summary()
-#reglin::ggresiduals(modelopam)
-shapiro.test(modelopam$residuals)
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modelopam)
-```
-
--   **M2**: Modelo com escolaridade sendo significativa
-
 ```{r}
 modelopam2 <- lm(pressao_media ~ grupo + anti_hiper + imc + idade + escolaridade_niveis, data = df_reg)
 modelopam2 %>% summary()
-#reglin::ggresiduals(modelopam2)
-shapiro.test(modelopam2$residuals)
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modelopam2)
-```
 
--   Comparação **M1** e **M2**:
-
-Indica pelo menos um nível de escolaridade significativo.
-
-```{r}
-anova(modelopam, modelopam2)
+residuo_modelopad2 <- reglin::ggresiduals(modelopam2)
+normalidade_modelopam2 <- resumo_normal(
+  shapiro.test(modelopam2$residuals), "Modelo Pressão Média"
+  )
 ```
 
 ### IMC
@@ -1402,11 +1351,10 @@ modeloimc <- lm(imc ~ grupo + pressao_media + triglicerides, df_reg)
 modeloimc <- lm(imc ~ grupo + pressao_media + triglicerides, df_reg[-188,])
 #outlierTest(modeloimc) # mais observacao influente, mas nao vamos tira-la pq tem normalidade
 
-summary(modeloimc)
-shapiro.test(modeloimc$residuals)
-#reglin::ggresiduals(modeloimc)
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modeloimc)
+residuo_modeloimc <- reglin::ggresiduals(modeloimc)
+normalidade_modeloimc <- resumo_normal(
+  shapiro.test(modeloimc$residuals), "Modelo IMC"
+  )
 ```
 
 ### LDL
@@ -1414,23 +1362,24 @@ durbinWatsonTest(modeloimc)
 ```{r}
 modeloldl <- lm(ldl_dosado ~ grupo + idade, df_reg)
 summary(modeloldl)
-shapiro.test(modeloldl$residuals)
-qqnorm(modeloldl$residuals); qqline(modeloldl$residuals)
-#reglin::ggresiduals(modeloldl)
+
+residuo_modeloldl <- reglin::ggresiduals(modeloldl)
+normalidade_modeloldl <- resumo_normal(
+  shapiro.test(modeloldl$residuals), "Modelo LDL Dosado"
+  )
 #outlierTest(modeloldl) # ha pontos influentes, mas nao ajudam na normalidade, precisa de muitos e piora o r2
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modeloldl)
 ```
 
-### Trombomodulina (creatinina poderia entrar se fosse importante)
+### Trombomodulina
 
 ```{r}
 modelotromb <- lm(trombomodulina ~ grupo + escolaridade_bin, data = df_reg)
 summary(modelotromb)
-shapiro.test(modelotromb$residuals)
-#reglin::ggresiduals(modelotromb)
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modelotromb)
+
+residuo_modelotromb <- reglin::ggresiduals(modelotromb)
+normalidade_modelotromb <- resumo_normal(
+  shapiro.test(modelotromb$residuals), "Modelo Trombomodulina"
+  )
 ```
 
 ### ADMA
@@ -1527,23 +1476,29 @@ durbinWatsonTest(modeloadma3)
 -   R2ajustado pouco penalizado
 
 ```{r}
-modeloadma4 <- lm(log(adma) ~ grupo + categoriaimc + escolaridade, df_adma)
-modeloadma4 %>% summary()
-shapiro.test(modeloadma4$residuals)
-reglin::ggresiduals(modeloadma4)
-```
-
-```{r}
 modeloadma4 <- lm(log(adma) ~ grupo + categoriaimc + escolaridade_niveis, df_adma)
 modeloadma4 %>% summary()
-shapiro.test(modeloadma4$residuals)
+
+residuo_modeloadma4 <- reglin::ggresiduals(modeloadma4)
+normalidade_modeloadma4 <- resumo_normal(
+  shapiro.test(modeloadma4$residuals), "Modelo Trombomodulina"
+  )
 ```
 
 # Síndrome Metabólica
 
 ```{r}
-modelo_sin <- glm(sindrome_met ~ grupo + escolaridade_niveis,family = binomial(link = "logit"), data = df_reg)
-modelo_sin %>% summary()
+modelo_sin1 <- glm(sindrome_met ~ pressao_media + imc, family = binomial(link = "logit"), data = df_reg)
+modelo_sin1 %>% summary()
+hnp(modelo_sin1)
+tbl_regression(modelo_sin1, exponentiate = TRUE)
+ConcluiAjuste(modelo_sin1)
+
+modelo_sin2 <- glm(sindrome_met ~ grupo + imc, family = binomial(link = "logit"), data = df_adma) 
+modelo_sin2 %>% summary()
+hnp(modelo_sin2)
+tbl_regression(modelo_sin2, exponentiate = TRUE)
+ConcluiAjuste(modelo_sin2)
 ```
 
 ##  Resultado Cálculo Amostral
@@ -1609,8 +1564,58 @@ lista_n[[5]] %>% as_tibble() %>%
   kable_styling("striped", full_width = F)
 ```
 
-# Conclusão
-
 # Referências
 
 <http://ndl.ethernet.edu.et/bitstream/123456789/15304/1/9103.pdf>
+
+# Apêndice
+
+* Resíduo modelo PAS
+
+```{r}
+residuo_modelopas2
+normalidade_modelopas2
+```
+
+* Resíduo modelo PAD
+
+```{r}
+residuo_modelopad2
+normalidade_modelopad2
+```
+
+* Resíduo modelo PAM
+
+```{r}
+residuo_modelopam2
+normalidade_modelopam2
+```
+
+* Resíduo modelo IMC
+
+```{r}
+residuo_modeloimc
+normalidade_modeloimc
+```
+
+* Resíduo modelo LDL dosado
+
+```{r}
+residuo_modeloldl
+normalidade_modeloldl
+```
+
+* Resíduo Trombomodulina
+
+```{r}
+residuo_modelotromb
+normalidade_modelotromb
+```
+
+* Resíduo Adma
+
+```{r}
+residuo_modeloadma4
+normalidade_modeloadma4
+```
+
