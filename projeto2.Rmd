@@ -943,7 +943,7 @@ Os resultados destas análises foram meticulosamente organizados em uma tabela r
 
 Foram levantadas algumas medidas de resumo para as variáveis de interesse contidas no banco de dados. Essas descritivas foram analisadas com o objetivo de avaliar principalmente o efeito da variável em cada grupo. 
 
-Os resultados foram adicionados em uma tabela resumo, que contém, além da variável analisada e o grupo MN ou MP, as seguintes medidas descritivas, para os dados contínuos:
+Os resultados foram adicionados em uma tabela, que contém, além da variável analisada e o grupo MN ou MP, as seguintes medidas descritivas, para os dados contínuos:
 
 -  N: tamanho amostral de cada um dos grupos (valores presentes no banco de dados)
  
@@ -989,7 +989,7 @@ Para os dados numéricos, os testes tiveram por hipótese geral:
     \end{eqnarray}
 ```
 
-Foi feito o *Teste de Shapiro-Wilk* para avaliar se era válida a suposição de normalidade para os grupos. Foi aplicado o *Teste T* para comparação da média de dois grupos, assim como o *Teste de Mann-Whitney*, que foi aplicado como teste não paramétrico. Em suma, deseja-se avaliar se a média ea mediana entre os grupos é igual para uma dada variável ou se há diferença. Apesar de algumas veriáveis não terem atendido ao pressuposto de normalidade, os dois testes foram feitos para todas as variáveis, ficando a critério da pesqwuisadora uma possível padronização.
+Foi feito o *Teste de Shapiro-Wilk* para avaliar se era válida a suposição de normalidade para os grupos. Foi aplicado o *Teste T* para comparação da média de dois grupos, assim como o *Teste de Mann-Whitney*, que foi aplicado como teste não paramétrico. Em suma, deseja-se avaliar se a média ou a mediana entre os grupos é igual para uma dada variável ou se há diferença. Apesar de algumas variáveis não terem atendido ao pressuposto de normalidade, os dois testes foram feitos para todas as variáveis, ficando a critério da pesquisadora uma possível padronização.
 
 Para as variáveis qualitativas, o *Teste Qui-Quadrado* foi utilizado para tabelas de contingência, sendo aplicado sob a hipótese nula de que não há diferença significativa nas distribuições das variáveis entre os grupos, ou seja, as variáveis são independentes.
 
@@ -1003,14 +1003,15 @@ Como o objetivo é o estudo dos grupos e de como ele afeta as variáveis respost
 
 (colocar as variaveis)
 
-As variáveis explicativas pertencentes a cada um dos modelos finais foram apenas aquelas consideradas estatisticamente e clinicamente significativas em relação ao que estava sendo estudado.
+As variáveis explicativas pertencentes a cada um dos modelos finais foram apenas aquelas consideradas estatisticamente e clinicamente significativas em relação ao que estava sendo estudado. A maioria das covariáveis inseridas, além de grupo, foram inseridas para melhorar o ajuste e entrar como métricas de perturbação, ou seja, o quanto outras variáveis, além de grupo, contribuiem ou interferem na explicação da variável resposta.
 
-Os resíduos para a maioria dos modelos seguiu a normalidade, e os pressupostos para realizar a regressão foram seguidos (o que não deu normalidade foi )
+Foi usado um Modelo de Regressão Linear supondo normalidade para os resíduos, para todas as variáveis contínuas. A fim de validar as suposições, dos dados usados para variável Adma, foi retirado observações extremas, todas elas do grupo MP, e a retirada juntamente com a transformação logarítma na variável resposta contribuiu para melhorar o ajuste. Todas regressões foram significativas. Como há presença de variável categórica em *Grupo*, o grupo basal tido como referência no intercepto é o grupo MN (das mulheres saudáveis). A interpretação dos modelos lineares implica em quanto a variável aumenta/diminui em média a variável resposta. Para a variável grupo, temos que a interpretação fica: como estar no grupo MP influência no aumento ou diminuição da variável resposta em média.
+
+Os resíduos para a maioria dos modelos seguiu a normalidade, e os pressupostos para realizar a regressão foram seguidos. A única regressão que não apresentou normalidade foi para a variável LDL Dosado, para qual oberservou-se as caudas mais pesadas, distanciando assim do modelo Normal. Entretanto, como o desvio foi apenas nas extremidades e como trata-se de uma amostra grande, considerou-se razoável em aceitar o modelo. 
 
 falar dos modelos com e sem escolaridade
 
-### Lineares
-
+Algumas variáveis contínuas foram usadas ora como contínuas, ora como categóricas em níveis. IMC, por exemplo, foi segmentado em mulheres com *magraza/eutrofia* (imc < 24.99), *sobrepeso* (imc entre 24.99-29.99) e *obesidade* (imc > 30). O tipo de sangue também foi sugerido segmentação diferente da original em *sangue O* (caso grupo psanguíneo fosse O) e *sangue não O* (demais grupos sanguíneos), entretanto, não houve significância esse agrupamento.
 
 ## Tamanho Amostral
 
@@ -1084,18 +1085,8 @@ Então, escolhendo um nível de significância de $\alpha = 0,05$ e variandos-se
 
 ### Dados numéricos
 
-Para os dados numéricos, os testes tiveram por hipótese geral:
+Para os dados numéricos, os testes tiveram os seguintes resultados:
 
-```{=tex}
-\begin{eqnarray}
-        {
-        \left\{\begin{array}{lcc}
-        H_{0}: {\theta_{Grupo~MN} = \theta_{Grupo~MP}} \\
-        H_{1}: {\theta_{Grupo~MN} \neq \theta_{Grupo~MP}}
-        \end{array}\right.
-        }    \nonumber
-    \end{eqnarray}
-```
 ```{r funcao_teste_hipotese}
 realizar_teste <- function(dataframe, variavel) {
   
@@ -1148,6 +1139,8 @@ kbl(
 ```
 
 ### Dados categóricos
+
+Para os dados categóricos, os testes tiveram os seguintes resultados:
 
 ```{r}
 # Teste de hipóteses para dados categóricos
