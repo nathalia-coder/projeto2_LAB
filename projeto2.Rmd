@@ -937,6 +937,81 @@ As variáveis analisadas foram:
 
     -   2 - Teve pré-eclâmpsia
 
+## Análises descritivas
+
+Os resultados destas análises foram meticulosamente organizados em uma tabela resumo, proporcionando uma visão abrangente das medidas analisadas e dos resultados dos testes realizados.
+
+Foram levantadas algumas medidas de resumo para as variáveis de interesse contidas no banco de dados. Essas descritivas foram analisadas com o objetivo de avaliar principalmente o efeito da variável em cada grupo. 
+
+Os resultados foram adicionados em uma tabela resumo, que contém, além da variável analisada e o grupo MN ou MP, as seguintes medidas descritivas, para os dados contínuos:
+
+-  N: tamanho amostral de cada um dos grupos (valores presentes no banco de dados)
+ 
+-  Nulos: quantidade de valores nulos em cada um dos grupos
+ 
+-  Média: média do conjunto de dados em cada grupo
+ 
+-  DesPad: desvio padrão do conjunto de dados em cada grupo
+ 
+-  Min: valor mínimo do conjunto de dados em cada grupo
+ 
+-  Quartis: valores que dividem um conjunto de dados ordenados em partes iguais, representando porcentagens específicas da distribuição
+
+    -   Q1 -- é o primeiro quartil, valor que divide os dados ordenados em que 25% das observações estão abaixo desse ponto, representando o limite inferior do primeiro quarto da distribuição
+    
+    -   Mediana -- também chamada de segundo quartil, é o valor central em um conjunto de dados ordenados, onde metade das observações estão abaixo e metade estão acima desse ponto, dividindo o conjunto ao meio
+    
+    -   Q3 -- valor que divide os dados ordenados em que 75% das observações estão abaixo desse ponto, representando o limite inferior do último quarto da distribuição
+
+ 
+-  Máx: valor máximo do conjunto de dados em cada grupo
+ 
+Na tabela dos dados discretos, podemos encontrar as colunas que representam:
+
+-  Categoria: apresenta quais são as categorias da variável analisada
+
+- MN e MP: quantidade de observações no grupo MN e MP
+
+- MN(%) e MP(%): representam o percentual de mulheres que está no grupo, em relação ao total
+
+## Testes de hipóteses
+
+Para os dados numéricos, os testes tiveram por hipótese geral:
+
+```{=tex}
+\begin{eqnarray}
+        {
+        \left\{\begin{array}{lcc}
+        H_{0}: {\mu_{Grupo~MN} = \mu_{Grupo~MP}} \\
+        H_{1}: {\mu_{Grupo~MN} \neq \mu_{Grupo~MP}}
+        \end{array}\right.
+        }    \nonumber
+    \end{eqnarray}
+```
+
+Foi feito o *Teste de Shapiro-Wilk* para avaliar se era válida a suposição de normalidade para os grupos. Foi aplicado o *Teste T* para comparação da média de dois grupos, assim como o *Teste de Mann-Whitney*, que foi aplicado como teste não paramétrico. Em suma, deseja-se avaliar se a média ea mediana entre os grupos é igual para uma dada variável ou se há diferença. Apesar de algumas veriáveis não terem atendido ao pressuposto de normalidade, os dois testes foram feitos para todas as variáveis, ficando a critério da pesqwuisadora uma possível padronização.
+
+Para as variáveis qualitativas, o *Teste Qui-Quadrado* foi utilizado para tabelas de contingência, sendo aplicado sob a hipótese nula de que não há diferença significativa nas distribuições das variáveis entre os grupos, ou seja, as variáveis são independentes.
+
+## Regressões
+
+Nas regressões, o objetivo era avaliar condições que se caracterizam como fator de risco para pré-eclâmpsia, ao avaliar se a condição altera resultados desses sinalizadores. Portanto, quando o grupo for significativo para o modelo, pode-se afirmar que ter a doença altera de maneira significativa as chances da mulher ter alterações no que está sendo avaliado.
+
+Sabemos, pela literatura, que a pré eclampsia é caracterizada pela resposta inflamatória, lesão endotelial, agregação plaquetária, ativação do sistema de coagulação e aumento da resistência vascular generalizada, portanto, as variáveis respostas são aquelas que caracterizam essa disfunção, e espera-se que elas estejam alteradas quando a mulher apresentou pré eclâmpsia. 
+
+Como o objetivo é o estudo dos grupos e de como ele afeta as variáveis resposta, nossas variáveis independentes iniciais foram aquelas que deram significativas para o grupo. Essas variáveis podem ser encontradas na tabela resumo. Algumas delas foram excluídas por ter forte multicolinearidade, e apenas a que foi julgada mais importante deses pequenos grupos continuou no modelo.
+
+(colocar as variaveis)
+
+As variáveis explicativas pertencentes a cada um dos modelos finais foram apenas aquelas consideradas estatisticamente e clinicamente significativas em relação ao que estava sendo estudado.
+
+Os resíduos para a maioria dos modelos seguiu a normalidade, e os pressupostos para realizar a regressão foram seguidos (o que não deu normalidade foi )
+
+falar dos modelos com e sem escolaridade
+
+### Lineares
+
+
 ## Tamanho Amostral
 
 Para o cálculo do tamanho da amostra onde o objetivo do estudo era validar se a amostra usada no trabalho é significativa para comparar dois grupos: grupo tratamento com um controle, no contexto do trabalho o grupo controle seriam as mulheres que tiveram gestações saudáveis *(MN)* e o grupo tratamento seriam mulheres que tiveram pré-eclâmpsia *(MP)*. Optou-se por usar a informação da variância e da diferença das médias das variáveis que foram usadas como resposta na regressão. São elas:
