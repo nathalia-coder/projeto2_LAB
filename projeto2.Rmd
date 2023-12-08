@@ -993,15 +993,18 @@ Foi feito o *Teste de Shapiro-Wilk* para avaliar se era válida a suposição de
 
 Para as variáveis qualitativas, o *Teste Qui-Quadrado* foi utilizado para tabelas de contingência, sendo aplicado sob a hipótese nula de que não há diferença significativa nas distribuições das variáveis entre os grupos, ou seja, as variáveis são independentes.
 
+Algumas variáveis contínuas foram usadas ora como contínuas, ora como categóricas em níveis. IMC, por exemplo, foi segmentado em mulheres com *magraza/eutrofia* (imc < 24.99), *sobrepeso* (imc entre 24.99-29.99) e *obesidade* (imc > 30). O tipo de sangue também foi sugerido segmentação diferente da original em *sangue O* (caso grupo psanguíneo fosse O) e *sangue não O* (demais grupos sanguíneos), entretanto, não houve significância esse agrupamento.
+
+Outra categorização feita foi em relação a escolaridade. Ela estava, inicialmente, dividida em 6 categorias, contidas na seção 3.1. Ela foi tratada como variável binária, contendo apenas as categorias divididas em esino básico e ensino superior. Posteriomente, ela foi dividida em 3 níveis: fundamental (ensino infantil e fundamental), médio (ensino médio e técnico) e superior (ensino superior e pós graduação). Essa maneira se mostrou mais adequada para as análises.
+
+
 ## Regressões
 
 Nas regressões, o objetivo era avaliar condições que se caracterizam como fator de risco para pré-eclâmpsia, ao avaliar se a condição altera resultados desses sinalizadores. Portanto, quando o grupo for significativo para o modelo, pode-se afirmar que ter a doença altera de maneira significativa as chances da mulher ter alterações no que está sendo avaliado.
 
-Sabemos, pela literatura, que a pré eclampsia é caracterizada pela resposta inflamatória, lesão endotelial, agregação plaquetária, ativação do sistema de coagulação e aumento da resistência vascular generalizada, portanto, as variáveis respostas são aquelas que caracterizam essa disfunção, e espera-se que elas estejam alteradas quando a mulher apresentou pré eclâmpsia. 
+Sabemos, pela literatura, que a pré eclampsia é caracterizada pela resposta inflamatória, lesão endotelial, agregação plaquetária, ativação do sistema de coagulação e aumento da resistência vascular generalizada, portanto, as variáveis respostas são aquelas que caracterizam essa disfunção, e espera-se que elas estejam alteradas quando a mulher apresentou pré eclâmpsia. São elas: pressão arterial sistólica (PAS), pressão arterial diastólica (PAD), pressão arterial média (PAM), índice de massa corporal (IMC), colesterol LDL, trombomodulina, ADMA e síndrome metabólica.
 
 Como o objetivo é o estudo dos grupos e de como ele afeta as variáveis resposta, nossas variáveis independentes iniciais foram aquelas que deram significativas para o grupo. Essas variáveis podem ser encontradas na tabela resumo. Algumas delas foram excluídas por ter forte multicolinearidade, e apenas a que foi julgada mais importante deses pequenos grupos continuou no modelo.
-
-(colocar as variaveis)
 
 As variáveis explicativas pertencentes a cada um dos modelos finais foram apenas aquelas consideradas estatisticamente e clinicamente significativas em relação ao que estava sendo estudado. A maioria das covariáveis inseridas, além de grupo, foram inseridas para melhorar o ajuste e entrar como métricas de perturbação, ou seja, o quanto outras variáveis, além de grupo, contribuiem ou interferem na explicação da variável resposta.
 
@@ -1009,9 +1012,7 @@ Foi usado um Modelo de Regressão Linear supondo normalidade para os resíduos, 
 
 Os resíduos para a maioria dos modelos seguiu a normalidade, e os pressupostos para realizar a regressão foram seguidos. A única regressão que não apresentou normalidade foi para a variável LDL Dosado, para qual oberservou-se as caudas mais pesadas, distanciando assim do modelo Normal. Entretanto, como o desvio foi apenas nas extremidades e como trata-se de uma amostra grande, considerou-se razoável em aceitar o modelo. 
 
-falar dos modelos com e sem escolaridade
-
-Algumas variáveis contínuas foram usadas ora como contínuas, ora como categóricas em níveis. IMC, por exemplo, foi segmentado em mulheres com *magraza/eutrofia* (imc < 24.99), *sobrepeso* (imc entre 24.99-29.99) e *obesidade* (imc > 30). O tipo de sangue também foi sugerido segmentação diferente da original em *sangue O* (caso grupo psanguíneo fosse O) e *sangue não O* (demais grupos sanguíneos), entretanto, não houve significância esse agrupamento.
+O coeficiente de determinação (\(R^2\)) em análises de regressão na área médica oferece uma medida da proporção da variabilidade na variável dependente que é explicada pelas variáveis independentes do modelo. No entanto, em estudos médicos, \(R^2\) frequentemente não atinge valores elevados. Isso se deve à complexidade das interações biológicas e à presença de múltiplos fatores desconhecidos que contribuem para a variabilidade dos resultados. A natureza intrincada dessas relações pode resultar em um \(R^2\) mais modesto, indicando que o modelo não consegue explicar toda a variabilidade observada, uma característica comum em pesquisas médicas devido à diversidade e complexidade dos fenômenos biológicos estudados.
 
 ## Tamanho Amostral
 
@@ -1308,6 +1309,14 @@ shapiro.test(modelopas$residuals)
 print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modelopas)
 ```
+No modelo para pressão sistólica, as variáveis grupo, idade, uso de anti-hipertensivo e IMC foram consideradas significativas, explicando 24% da variabilidade (\(R^2\)=24%).
+
+Observando a segunda coluna, notamos que o coeficiente para o grupo1 é 6,44. Portanto, mantendo todas as outras variáveis constantes, pertencer ao grupo1 está associado a um acréscimo de 6,44 unidades na pressão arterial em relação ao grupo de referência. Esse aumento é observado para cada unidade de mudança na variável de interesse associada ao grupo1.
+
+De maneira análoga, podemos perceber que o acréscimo de um ano de idade implica um aumento de 0,51 mmHg na pressão arterial sistólica (PAS). O uso de anti-hipertensivos está associado a um aumento de 10,57 mmHg na PAS, enquanto o aumento em uma unidade de IMC resulta em um acréscimo de 1,08 mmHg na PAS.
+
+Esses resultados indicam as relações específicas entre as variáveis do modelo e a pressão sistólica, fornecendo insights importantes sobre os fatores que influenciam os níveis de pressão arterial.
+
 
 -   **M2**: Modelo com escolaridade sendo significativa
 
@@ -1319,6 +1328,11 @@ shapiro.test(modelopas2$residuals)
 print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modelopas2)
 ```
+No novo modelo, ao incluir a variável de escolaridade, observamos mudanças nos impactos das variáveis previamente consideradas.
+
+Mantendo as demais variáveis constantes, pertencer ao grupo1 está associado a um aumento de 5,8007 mmHg na pressão arterial em comparação com o grupo de referência. O aumento em um ano de idade agora implica um acréscimo de 0,4674 mmHg na pressão arterial sistólica (PAS). Tomar anti-hipertensivo continua associado a um aumento significativo de 9,6290 mmHg na PAS.
+
+Em relação à escolaridade, observamos que ter nível médio ou superior está associado a uma diminuição na PAS. A escolaridade de nível médio está associada a uma redução de 15,4092 mmHg, enquanto a escolaridade de nível superior está associada a uma redução de 13,4008 mmHg. Portanto, as chances de apresentar níveis elevados de pressão arterial parecem ser influenciadas tanto por fatores demográficos e de saúde quanto pelo nível educacional, indicando a complexidade dessas interações no contexto da pressão arterial.
 
 -   Comparação **M1** e **M2**:
 
@@ -1340,6 +1354,12 @@ shapiro.test(modelopad$residuals)
 print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modelopad)
 ```
+No modelo para pressão sistólica, as variáveis grupo, uso de anti-hipertensivo, idade e IMC foram consideradas significativas, explicando 24% da variabilidade (\(R^2\)=24%).
+
+Na análise de regressão para a pressão arterial diastólica (PAD), as mudanças nos coeficientes revelam associações distintas com as variáveis consideradas. Mantendo as outras variáveis constantes, pertencer ao grupo1 está associado a um aumento de 5,64mmHg na pressão arterial diastólica em comparação com o grupo de referência. 
+
+O uso de anti-hipertensivo está significativamente associado a um aumento de 8,44mmHg na PAD. Além disso, um acréscimo de uma unidade no índice de massa corporal (IMC) resulta em um aumento de 0,73mmHg na PAD. A idade também desempenha um papel, onde um aumento de um ano está associado a um acréscimo de 0,39mmHg na PAD. 
+
 
 -   **M2**: Modelo com escolaridade sendo significativa
 
@@ -1351,6 +1371,9 @@ shapiro.test(modelopad2$residuals)
 print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modelopad2)
 ```
+Na análise de regressãodo modelo para a pressão arterial diastólica (PAD) com a inclusão da variável escolaridade, observamos as seguintes alterações: pertencer ao grupo1 permanece associado a um aumento de 4,78mmHg na PAD; o uso de anti-hipertensivo ainda está relacionado a um aumento de 7,66mmHg na PAD. Adicionalmente, o aumento em uma unidade de IMC agora implica um acréscimo de 0,68mmHg na PAD, enquanto o envelhecimento em um ano continua associado a um acréscimo de 0,36mmHg na PAD. 
+
+Introduzindo escolaridade, notamos que ter nível médio ou superior está associado a uma diminuição na PAD. Especificamente, a escolaridade de nível médio está relacionada a uma redução de 13,82mmHg, e a escolaridade de nível superior está associada a uma redução de 13,68mmHg na pressão arterial diastólica.
 
 -   Comparação **M1** e **M2**:
 
@@ -1373,6 +1396,10 @@ print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modelopam)
 ```
 
+No modelo para pressão sistólica, as variáveis grupo, uso de anti-hipertensivo, idade e IMC foram consideradas significativas, explicando 26% da variabilidade (\(R^2\)=26%).
+
+Os resultados indicam as seguintes associações: mantendo as demais variáveis constantes, pertencer ao grupo1 está associado a um aumento de 5,9136 unidades na pressão arterial média em comparação com o grupo de referência. O uso de anti-hipertensivo está significativamente associado a um aumento de 9,1520 unidades na pressão arterial média. Além disso, um acréscimo de uma unidade no índice de massa corporal (IMC) resulta em um aumento de 0,8516 unidades na pressão arterial média. A idade também desempenha um papel, onde um aumento de um ano está associado a um acréscimo de 0,4336 unidades na pressão arterial média.
+
 -   **M2**: Modelo com escolaridade sendo significativa
 
 ```{r}
@@ -1383,6 +1410,10 @@ shapiro.test(modelopam2$residuals)
 print("Durbin-Watson Test for Autocorrelated Errors")
 durbinWatsonTest(modelopam2)
 ```
+
+No novo modelo, \(R^2\) foi ajustado para 31%.
+
+Mantendo as demais variáveis constantes, pertencer ao grupo1 está associado a um aumento de 5,1234 unidades na PAM em comparação com o grupo de referência. O uso de anti-hipertensivo está significativamente associado a um aumento de 8,3231 unidades na PAM. Além disso, um acréscimo de uma unidade no índice de massa corporal (IMC) resulta em um aumento de 0,7968 unidades na PAM. A idade também desempenha um papel, onde um aumento de um ano está associado a um acréscimo de 0,4017 unidades na PAM. Introduzindo a variável escolaridade, notamos que ter nível médio ou superior está associado a uma diminuição na PAM. Especificamente, a escolaridade de nível médio está relacionada a uma redução de 14,3546 unidades, e a escolaridade de nível superior está associada a uma redução de 13,5878 unidades na PAM. 
 
 -   Comparação **M1** e **M2**:
 
