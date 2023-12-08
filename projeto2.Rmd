@@ -233,7 +233,8 @@ df1 <- df1 %>%
     filtr_glomerular = coluna_na_numerica(filtr_glomerular, "#DIV/0!", NA) %>% coluna_numerica(),
     ck = coluna_numerica(ck),
     glicemia = coluna_numerica(glicemia),
-    glicose = coluna_numerica(glicose)
+    glicose = coluna_numerica(glicose),
+    sindrome_met = coluna_numerica(sindrome_met)
     )
 
 df1 <- df1 %>%
@@ -1192,94 +1193,6 @@ kbl(
   collapse_rows(columns = c(1,7))
 ```
 
-# Outras Informações
-
--   Descritiva ADMA e trombomodulina
-
-```{r}
-# Gráfico de histograma
-g1 <- ggplot(df3, aes(x = adma)) +
-  geom_histogram(fill = "#4C78A8", color = "#4C78A8", bins = 10, alpha = 0.7) +
-  labs(title= "Descritivas ADMA\n\n Histograma ADMA", x = "adma", y = "Frequência") +
-  theme_minimal() +
-  theme(axis.text = element_text(size = 11), 
-        axis.title = element_text(size = 13),
-        plot.title = element_text(size = 15)) +
-  facet_grid(.~1, scales = "free_y")
-
-# Gráfico de boxplot
-g2 <- ggplot(df3, aes(y = adma)) +
-  geom_boxplot(fill = "#F28E2B", color = "#F28E2B", alpha = 0.7) +
-  labs(title = "\n\nBoxplot ADMA", y = "adma") +
-  theme_minimal() +
-  theme(axis.text = element_text(size = 11), 
-        axis.title = element_text(size = 13),
-        plot.title = element_text(size = 15))
-
-g1 + g2
-
-# Gráfico de histograma
-g3 <- ggplot(df3, aes(x = trombomodulina)) +
-  geom_histogram(fill = "#4C78A8", color = "#4C78A8", bins = 10, alpha = 0.7) +
-  labs(title = "Descritivas trombomodulina\n\n Histograma trombomodulina", x = "trombomodulina", y = "Frequência") +
-  theme_minimal() +
-  theme(axis.text = element_text(size = 11), 
-        axis.title = element_text(size = 13),
-        plot.title = element_text(size = 15)) +
-  facet_grid(.~1, scales = "free_y")
-
-# Gráfico de boxplot
-g4 <- ggplot(df3, aes(y = trombomodulina)) +
-  geom_boxplot(fill = "#F28E2B", color = "#F28E2B", alpha = 0.7) +
-  labs(title = "\n\nBoxplot trombomodulina", y = "trombomodulina") +
-  theme_minimal() +
-  theme(axis.text = element_text(size = 11), 
-        axis.title = element_text(size = 13),
-        plot.title = element_text(size = 15))
-
-g3 + g4
-```
-
--   Sobre Hipertensão e Usar anti hipertensivos
-
-```{r}
-Hipertensao <- df_completo$hipertensao  %>% as.factor(); AntiHiper <- df_completo$anti_hiper %>% as.factor()
-tab <- xtabs(~  Hipertensao + AntiHiper)
-tab
-```
-
--   Comparação grupos em relação a hipertensão e uso de anti hipertensivos
-
-```{r}
-manti_hiper<- df_completo %>% select(grupo, anti_hiper)
-table(manti_hiper)
-
-mhiper<- df_completo %>% select(grupo, hipertensao)
-table(mhiper)
-```
-
--   Correlações:
-
-```{r}
-data <- df_num %>% drop_na() %>% select(-grupo)
-
-num_sig <- tabela_resumo %>% filter(`P(Manh-W)` < 0.1 | `P(Test-T)` < 0.1) %>% pull("Variável") %>% unique()
-data_sig <- data %>% select(all_of(num_sig))
-
-corrplot::corrplot(cor(data_sig) %>% round(3),
-                   diag = F, type = "upper", order="hclust"
-                   )
-
-## Tirando correlacionadas
-num_sig_sem_corr <- c(
-  "imc", "pressao_media", "ldl_dosado", "colesterol_total", "filtr_glomerular", "triglicerides")
-
-data_sig_sem_corr <- data %>% select(all_of(num_sig_sem_corr))
-corrplot::corrplot(cor(data_sig_sem_corr), 
-                   method = "color", diag = F, type = "upper",addCoef.col = "black", order="hclust"
-                   )
-```
-
 ## Resultado Regressões Lineares
 
 ```{r funcao_resumo_ajuste}
@@ -1312,14 +1225,12 @@ resumo_normal <- function(teste, variavel){
 modelopas2 <- lm(pressao_sis ~ grupo + idade + anti_hiper + imc + escolaridade_niveis, data = df_reg)
 modelopas2 %>% summary()
 
-residuo_modelopas2 <- reglin::ggresiduals(modelopas2)
 normalidade_modelopas2 <- resumo_normal(
   shapiro.test(modelopas2$residuals), "Modelo Pressão Sistólica"
   )
 ```
-No novo modelo, ao incluir a variável de escolaridade, observamos mudanças nos impactos das variáveis previamente consideradas.
 
-Mantendo as demais variáveis constantes, pertencer ao grupo1 está associado a um aumento de 5,8007 mmHg na pressão arterial em comparação com o grupo de referência. O aumento em um ano de idade agora implica um acréscimo de 0,4674 mmHg na pressão arterial sistólica (PAS). Tomar anti-hipertensivo continua associado a um aumento significativo de 9,6290 mmHg na PAS.
+**Interpretação:** Mantendo as demais variáveis constantes, pertencer ao grupo1 está associado a um aumento de 5,8007 mmHg na pressão arterial em comparação com o grupo de referência. O aumento em um ano de idade implica um acréscimo de 0,4674 mmHg na pressão arterial sistólica (PAS). Tomar anti-hipertensivo continua associado a um aumento significativo de 9,6290 mmHg na PAS.
 
 Em relação à escolaridade, observamos que ter nível médio ou superior está associado a uma diminuição na PAS. A escolaridade de nível médio está associada a uma redução de 15,4092 mmHg, enquanto a escolaridade de nível superior está associada a uma redução de 13,4008 mmHg. Portanto, as chances de apresentar níveis elevados de pressão arterial parecem ser influenciadas tanto por fatores demográficos e de saúde quanto pelo nível educacional, indicando a complexidade dessas interações no contexto da pressão arterial.
 
@@ -1329,14 +1240,14 @@ Em relação à escolaridade, observamos que ter nível médio ou superior está
 modelopad2 <- lm(pressao_dias ~ grupo + anti_hiper + imc + idade + escolaridade_niveis, data = df_reg)
 modelopad2 %>% summary()
 
-residuo_modelopad2 <- reglin::ggresiduals(modelopad2)
 normalidade_modelopad2 <- resumo_normal(
   shapiro.test(modelopad2$residuals), "Modelo Pressão Diastólica"
   )
 ```
-Na análise de regressãodo modelo para a pressão arterial diastólica (PAD) com a inclusão da variável escolaridade, observamos as seguintes alterações: pertencer ao grupo1 permanece associado a um aumento de 4,78mmHg na PAD; o uso de anti-hipertensivo ainda está relacionado a um aumento de 7,66mmHg na PAD. Adicionalmente, o aumento em uma unidade de IMC agora implica um acréscimo de 0,68mmHg na PAD, enquanto o envelhecimento em um ano continua associado a um acréscimo de 0,36mmHg na PAD.
 
-Introduzindo escolaridade, notamos que ter nível médio ou superior está associado a uma diminuição na PAD. Especificamente, a escolaridade de nível médio está relacionada a uma redução de 13,82mmHg, e a escolaridade de nível superior está associada a uma redução de 13,68mmHg na pressão arterial diastólica.
+**Interpretação:** Na análise de regressão do modelo para a pressão arterial diastólica (PAD) nota-se que pertencer ao grupo1 permanece associado a um aumento de 4,78mmHg na PAD; o uso de anti-hipertensivo ainda está relacionado a um aumento de 7,66mmHg na PAD. Adicionalmente, o aumento em uma unidade de IMC agora implica um acréscimo de 0,68mmHg na PAD, enquanto o envelhecimento em um ano continua associado a um acréscimo de 0,36mmHg na PAD.
+
+Introduzindo escolaridade, nota-se que ter nível médio ou superior está associado a uma diminuição na PAD. Especificamente, a escolaridade de nível médio está relacionada a uma redução de 13,82mmHg, e a escolaridade de nível superior está associada a uma redução de 13,68mmHg na pressão arterial diastólica.
 
 ### PAM
 
@@ -1344,14 +1255,14 @@ Introduzindo escolaridade, notamos que ter nível médio ou superior está assoc
 modelopam2 <- lm(pressao_media ~ grupo + anti_hiper + imc + idade + escolaridade_niveis, data = df_reg)
 modelopam2 %>% summary()
 
-residuo_modelopad2 <- reglin::ggresiduals(modelopam2)
 normalidade_modelopam2 <- resumo_normal(
   shapiro.test(modelopam2$residuals), "Modelo Pressão Média"
   )
 ```
+
 No novo modelo, \(R^2\) foi ajustado para 31%.
 
-Mantendo as demais variáveis constantes, pertencer ao grupo1 está associado a um aumento de 5,1234 unidades na PAM em comparação com o grupo de referência. O uso de anti-hipertensivo está significativamente associado a um aumento de 8,3231 unidades na PAM. Além disso, um acréscimo de uma unidade no índice de massa corporal (IMC) resulta em um aumento de 0,7968 unidades na PAM. A idade também desempenha um papel, onde um aumento de um ano está associado a um acréscimo de 0,4017 unidades na PAM. Introduzindo a variável escolaridade, notamos que ter nível médio ou superior está associado a uma diminuição na PAM. Especificamente, a escolaridade de nível médio está relacionada a uma redução de 14,3546 unidades, e a escolaridade de nível superior está associada a uma redução de 13,5878 unidades na PAM.
+**Interpretação:** Mantendo as demais variáveis constantes, pertencer ao grupo1 está associado a um aumento de 5,1234 unidades na PAM em comparação com o grupo de referência. O uso de anti-hipertensivo está significativamente associado a um aumento de 8,3231 unidades na PAM. Além disso, um acréscimo de uma unidade no índice de massa corporal (IMC) resulta em um aumento de 0,7968 unidades na PAM. A idade também desempenha um papel, onde um aumento de um ano está associado a um acréscimo de 0,4017 unidades na PAM. Introduzindo a variável escolaridade, notamos que ter nível médio ou superior está associado a uma diminuição na PAM. Especificamente, a escolaridade de nível médio está relacionada a uma redução de 14,3546 unidades, e a escolaridade de nível superior está associada a uma redução de 13,5878 unidades na PAM.
 
 ### IMC
 
@@ -1362,12 +1273,14 @@ modeloimc <- lm(imc ~ grupo + pressao_media + triglicerides, df_reg)
 
 modeloimc <- lm(imc ~ grupo + pressao_media + triglicerides, df_reg[-188,])
 #outlierTest(modeloimc) # mais observacao influente, mas nao vamos tira-la pq tem normalidade
+modeloimc %>% summary()
 
-residuo_modeloimc <- reglin::ggresiduals(modeloimc)
 normalidade_modeloimc <- resumo_normal(
   shapiro.test(modeloimc$residuals), "Modelo IMC"
   )
 ```
+
+**Interpretação:** Para o modelo do IMC, uma observação influente foi tirada (188ª observação). Após o ajuste, nota-se que pertencer ao grupo MP indica aumento médio no IMC de 1,52 unidades. A cada uma unidade aumentada na pressão arterial média, há um ganho de 0,09 unidades no IMC aproximadamente. Além disso, uma unidade de aumento no triglicerides resultara num aumento de 0,015 unidades no imc médio. Todas variáveis foram significativas. Um $R^2$ de 21%.
 
 ### LDL
 
@@ -1375,12 +1288,13 @@ normalidade_modeloimc <- resumo_normal(
 modeloldl <- lm(ldl_dosado ~ grupo + idade, df_reg)
 summary(modeloldl)
 
-residuo_modeloldl <- reglin::ggresiduals(modeloldl)
 normalidade_modeloldl <- resumo_normal(
   shapiro.test(modeloldl$residuals), "Modelo LDL Dosado"
   )
 #outlierTest(modeloldl) # ha pontos influentes, mas nao ajudam na normalidade, precisa de muitos e piora o r2
 ```
+
+**Interpretação:** Para o modelo de regressão do ldl dosado, estar no grupo MP indica aumento no ldl dosado em 23,41 unidades em média. Além disso, a cada um ano acrescido na idade, resultará em aumento da variável resposta em 0,99 unidades. 
 
 ### Trombomodulina
 
@@ -1388,65 +1302,21 @@ normalidade_modeloldl <- resumo_normal(
 modelotromb <- lm(trombomodulina ~ grupo + escolaridade_bin, data = df_reg)
 summary(modelotromb)
 
-residuo_modelotromb <- reglin::ggresiduals(modelotromb)
 normalidade_modelotromb <- resumo_normal(
   shapiro.test(modelotromb$residuals), "Modelo Trombomodulina"
   )
 ```
 
+**Interpretação:** Para o modelo de regressão de trombomodulina, estar no grupo MP indica aumento na concentração de trombomodulina em 0,34 unidades em média. Para escolaridade dividida em nível básico e superior, comparada ao grupo básico, mulheres com escolaridade superior indicam redução da concentração de trombomodulina em 0,32 unidades em média. Todos coeficientes foram significativos no modelo.
+
 ### ADMA
 
-Modelo Normal para ADMA
-
--   Tiramos 1 observação influente, resultou em melhoria do $R^2_{Ajustado}$ e nas estimativas dos coeficientes (Maior mudança: Intercepto saiu de 204 para 101; idade de -5,7 para -2,5)
-
-```{r}
-modeloadma <- lm(adma ~ idade + ldl_dosado, df_reg[-c(5),])
-summary(modeloadma)
-shapiro.test(modeloadma$residuals)
-
-reglin::ggresiduals(modeloadma)
-#outlierTest(modeloadma) # ha pontos influentes
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modeloadma)
-```
-
--   Tiramos 2 observações influentes e a regressão deixa de ser significativa (inclusive sem ldl):
-
-Isso gera mais influentes, tirando-os, continua não significativa.
-
-```{r}
-modeloadma2 <- lm(adma ~ idade + ldl_dosado, df_reg[-c(5,71),])
-summary(modeloadma2)
-```
-
--   O gráfico de ADMA indicou que assume valores maiores que zero e com cauda longa;
+Havia 4 valores maiores que 200 para adma, todos do grupo MP (com eclâmpsia). Abaixo tem-se como retirar esses casos extremos contribuiram para a melhoria de algumas estimativas iniciais. Por exemplo, o desvio padrão do grupo MP reduziu de 167 para 38. Após a retirada os dados continuaram balenceados por grupo. 
 
 ```{r}
 df_adma = df_reg %>% drop_na(adma)
-
-plot(
-  density(df_adma$adma), 
-  main="Densidade de ADMA completo", lwd=3
-  )
-```
-
--   Há 4 valores maiores que 200, todos do grupo 1 (com eclâmpsia);
-
-```{r}
-plot(
-  density(df_adma$adma[df_adma$adma < 200]), 
-  main="Densidade de ADMA sem adma > 200", lwd=3
-  )
-
 df_adma <- df_adma %>% filter(adma < 200)
-```
 
--   Abaixo vemos como retirar esses casos extremos contribuiram para a melhoria de algumas estimativas iniciais, **o desvio padrão do grupo MP reduziu de 167 para 38**
-
--   Após a retirada os dados continuaram balenceados por grupo;
-
-```{r}
 kbl(
   rbind(
     realizar_teste(df_num %>% rename(adma_antes = adma), "adma_antes"),
@@ -1456,62 +1326,33 @@ kbl(
   format.args = list(decimal.mark = ',', big.mark = ".") 
   ) %>%
   kable_paper(full_width = F) %>%
-  column_spec(1, bold = T)
+  column_spec(1, bold = T) %>% 
+  collapse_rows(columns = c(1, 13, 14))
 ```
 
-**Principais mudanças:**
-
--   Um modelo com *idade e ldl_dosado* ou com *grupo e ldl_dosado* ou com todos juntos já não é mais significativo
-
--   O que era significativo no modelo inicial, passa a ser não significativo;
-
--   Melhor interpretação que o MLG;
-
--   Conclusão similar a todos demais;
-
--   Melhorou resíduos;
-
--   Regressão significativa;
-
-```{r}
-modeloadma3 <- lm(adma ~ grupo + categoriaimc + escolaridade, df_adma)
-summary(modeloadma3)
-shapiro.test(modeloadma3$residuals)
-
-reglin::ggresiduals(modeloadma3)
-#outlierTest(modeloadma3) # ha pontos influentes
-print("Durbin-Watson Test for Autocorrelated Errors")
-durbinWatsonTest(modeloadma3)
-```
-
--   Transformação na resposta, log(adma) normaliza resíduos
--   R2ajustado pouco penalizado
+Além disso, utilizou uma transformação na variável resposta, ($log(adma)$) que trouxe ganhos na normalização dos resíduos e indicou $R^2_{Ajustado}$ pouco penalizado.
 
 ```{r}
 modeloadma4 <- lm(log(adma) ~ grupo + categoriaimc + escolaridade_niveis, df_adma)
 modeloadma4 %>% summary()
 
-residuo_modeloadma4 <- reglin::ggresiduals(modeloadma4)
 normalidade_modeloadma4 <- resumo_normal(
   shapiro.test(modeloadma4$residuals), "Modelo Trombomodulina"
   )
 ```
 
+**Interpretação:** para o modelo Adma, estar no grupo MP indica aumento na variável resposta em 0,23 unidades em média. Usando IMC categorizado em Normal, Sobrepeso e Obesidade, comparado ao grupo de base *Normal*, estar no grupo de sobrepeso indica redição de 0,44 unidades na concentração de ADMA em média. Estar no grupo de obesidade em relação ao grupo base indica redução da concentração de ADMA de 0,11 unidades aproximadamente. Para escolaridade subdividida em 3 níveis, em relação ao grupo base "fundamental", estar no grupo com estudo nível "médio" indica redução de 0,24 unidades na concentração de ADMA em média. O grupo de nível "superior" indica redução de 0,39 unidades em média na variável resposta.
+
 # Síndrome Metabólica
 
 ```{r}
-modelo_sin1 <- glm(sindrome_met ~ pressao_media + imc, family = binomial(link = "logit"), data = df_reg)
-modelo_sin1 %>% summary()
-hnp(modelo_sin1)
-tbl_regression(modelo_sin1, exponentiate = TRUE)
-ConcluiAjuste(modelo_sin1)
-
 modelo_sin2 <- glm(sindrome_met ~ grupo + imc, family = binomial(link = "logit"), data = df_adma)
-modelo_sin2 %>% summary()
-hnp(modelo_sin2)
+#modelo_sin2 %>% summary()
+
 tbl_regression(modelo_sin2, exponentiate = TRUE)
-ConcluiAjuste(modelo_sin2)
 ```
+
+**Interpretação:** sobre o modelo de Síndrome Metabólica, retirou-se as mesmas observações de adma que eram extremas. Por ser um modelo logístico a interpretação se dá por razão de chances, logo, estar no grupo MP indica aumento de 256% na chance de ter síndrome metabólica. O IMC, por sua vez, um aumento de uma unidade no IMC indica aumento de chance de ter síndrome metabólica em 33%. Nsse modelo, grupo é significativo apenas para um $\alpha = 0,10$.
 
 ##  Resultado Cálculo Amostral
 
@@ -1585,49 +1426,90 @@ lista_n[[5]] %>% as_tibble() %>%
 * Resíduo modelo PAS
 
 ```{r}
-residuo_modelopas2
-normalidade_modelopas2
+residuo_modelopas2 <- reglin::ggresiduals(modelopas2)
+
+kbl(
+  normalidade_modelopas2
+) %>% 
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
 ```
 
 * Resíduo modelo PAD
 
 ```{r}
-residuo_modelopad2
-normalidade_modelopad2
+residuo_modelopad2 <- reglin::ggresiduals(modelopad2)
+
+kbl(
+  normalidade_modelopad2
+) %>% 
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
 ```
 
 * Resíduo modelo PAM
 
 ```{r}
-residuo_modelopam2
-normalidade_modelopam2
+residuo_modelopam2 <- reglin::ggresiduals(modelopam2)
+
+kbl(
+  normalidade_modelopam2
+) %>% 
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
 ```
 
 * Resíduo modelo IMC
 
 ```{r}
-residuo_modeloimc
-normalidade_modeloimc
+residuo_modeloimc <- reglin::ggresiduals(modeloimc)
+
+kbl(
+  normalidade_modeloimc
+) %>% 
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
 ```
 
 * Resíduo modelo LDL dosado
 
 ```{r}
-residuo_modeloldl
-normalidade_modeloldl
+residuo_modeloldl <- reglin::ggresiduals(modeloldl)
+
+kbl(
+  normalidade_modeloldl
+) %>% 
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
 ```
 
 * Resíduo Trombomodulina
 
 ```{r}
-residuo_modelotromb
-normalidade_modelotromb
+residuo_modelotromb <- reglin::ggresiduals(modelotromb)
+
+kbl(
+  normalidade_modelotromb
+) %>% 
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
 ```
 
 * Resíduo Adma
 
 ```{r}
-residuo_modeloadma4
-normalidade_modeloadma4
+residuo_modeloadma4 <- reglin::ggresiduals(modeloadma4)
+
+kbl(
+  normalidade_modeloadma4
+) %>% 
+  kable_paper(full_width = F) %>%
+  column_spec(1, bold = T)
+```
+
+* Resíduo modelo Síndrome Metabólica
+
+```{r}
+residuo_modelo_sin2 <- hnp(modelo_sin2)
 ```
 
