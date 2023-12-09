@@ -1193,6 +1193,26 @@ kbl(
   collapse_rows(columns = c(1,7))
 ```
 
+As tabelas acima apresentas as medidas descritivas usadas para estudar as variáveis, assim como os resultados dos testes realizados.
+
+O número de mulheres no grupo MP é, no total, 86, e de mulheres no grupo MN é 102. Na maioria das variáveis analisadas, podemos ver que existem poucos nulos, com no máximo quatro. Existem algumas exceções, e aquelas que apresentam mais valores nulos são a ADMA (111 nulos) e a trombomodulina (110 nulos).
+
+A média representa o valor típico em torno do qual os dados se concentram. É uma medida de centralidade que fornece uma visão geral do comportamento médio da variável.
+
+O desvio padrão é uma medida de dispersão que indica o quanto os valores da variável se afastam, em média, da média. Valores mais altos indicam maior variabilidade.
+
+O mínimo é o menor valor observado na variável, enquanto o máximo é o valor mais alto. Essas medidas destacam a faixa completa dos dados, indicando a amplitude do conjunto.
+
+Os quartis dividem os dados ordenados em partes iguais, proporcionando uma visão da distribuição. Q1 é o valor abaixo do qual 25% dos dados estão, a Mediana (Q2) divide os dados ao meio, e Q3 é o valor abaixo do qual 75% dos dados estão. A mediana, diferentemente da média, não é alterada por valores extremos, os outliers.
+
+Q1 e Q3 são especialmente úteis para entender a dispersão dos dados em diferentes partes da distribuição, enquanto a Mediana indica a posição central.
+
+Essas medidas descritivas são cruciais para obter insights sobre a distribuição e a variabilidade dos dados. Elas proporcionam uma visão resumida do comportamento da variável, ajudando a identificar padrões, tendências e possíveis outliers.
+
+As últimas três colunas fornecem os p-valores associados aos testes realizados. O primeiro resultado, P(Norm), corresponde ao teste de Shapiro-Wilk, que verifica a normalidade da distribuição dos dados. Como mencionado anteriormente, independentemente do resultado desse teste, tanto o teste T, um método paramétrico, quanto o teste de Mann-Whitney, um método não paramétrico, foram conduzidos. Os p-valores desses testes são apresentados nas colunas P(Test-T) e P(Manh-W), respectivamente. A disposição das linhas segue a ordenação de P(Manh-W); portanto, aquelas que apresentaram significância em relação a este teste aparecem primeiro na tabela.
+
+Observa-se que, até a variável "cintura aumentada", todas as variáveis acima dela revelaram diferenças estatisticamente significativas entre os dois grupos. Esse padrão sugere que, até certo ponto, as variáveis analisadas exibem variações significativas, destacando a importância dessas diferenças na interpretação dos resultados.
+
 ## Resultado Regressões Lineares
 
 ```{r funcao_resumo_ajuste}
